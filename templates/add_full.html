@@ -1,47 +1,27 @@
-$(document).ready(function() {
-    $('#mangaForm').on('submit', function(event) {
-        event.preventDefault();
-        const urlBase = $('#url_base').val();
-        $('#progress-container').show();
+{% extends "base.html" %}
 
-        $.ajax({
-            type: 'POST',
-            url: $('#mangaForm').attr('action'),
-            data: { url_base: urlBase },
-            success: function(response) {
-                const totalChapters = response.total_chapters;
-                $('#total-count').text(totalChapters);
-                processChapters(response.chapters);
-            }
-        });
-    });
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Adicionar Mangá Completo</h1>
+        <form id="mangaForm" action="{{ url_for('routes.add_full_manga') }}" method="POST">
+            <div class="form-group">
+                <label for="url_base">URL Base:</label>
+                <input type="text" class="form-control" id="url_base" name="url_base" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Adicionar Mangá</button>
+        </form>
 
-    function processChapters(chapters) {
-        let processedCount = 0;
+        <div id="progress-container" class="mt-4" style="display:none;">
+            <h3>Progresso: <span id="progress-count">0</span> / <span id="total-count">0</span> capítulos</h3>
+            <div class="progress">
+                <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
 
-        function processNext() {
-            if (processedCount < chapters.length) {
-                const chapter = chapters[processedCount];
-                $.ajax({
-                    type: 'POST',
-                    url: '/process_chapter',
-                    data: { chapter_url: chapter.url, chapter_number: chapter.number, manga_id: chapter.manga_id, nome_manga: chapter.nome_manga },
-                    success: function() {
-                        processedCount++;
-                        $('#progress-count').text(processedCount);
-                        const percentComplete = (processedCount / chapters.length) * 100;
-                        $('#progress-bar').css('width', percentComplete + '%').attr('aria-valuenow', percentComplete);
-
-                        if (processedCount === chapters.length) {
-                            $('#progress-bar').removeClass('progress-bar-animated').addClass('bg-success').text('Concluído!');
-                        } else {
-                            processNext();
-                        }
-                    }
-                });
-            }
-        }
-
-        processNext();
-    }
-});
+{% block scripts %}
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/add_full.js') }}"></script>
+{% endblock %}
