@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Listar Mangás{% endblock %}
+
+{% block content %}
+    <h2>Listar Mangás</h2>
+    <form method="GET" action="/listar_mangas" class="form-inline mb-4">
+        <input type="text" class="form-control mr-sm-2" name="query" placeholder="Pesquisar Mangá" value="{{ query }}">
+        <button type="submit" class="btn btn-primary">Pesquisar</button>
+    </form>
+    <ul class="list-group">
+        {% for manga in mangas %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    {{ manga.nome }}
+                    <br>
+                    <small>Categoria: {{ manga.categoria }}</small>
+                </div>
+                <div>
+                    <a href="{{ url_for('routes.edit', id=manga.id) }}" class="btn btn-info btn-sm">Editar</a>
+                    <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmDeleteModal" data-id="{{ manga.id }}">Excluir</button>
+                    <a href="{{ url_for('routes.add_chapter', id=manga.id) }}" class="btn btn-success btn-sm">Adicionar Capítulo</a>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+    <div class="mt-4">
+        {{ pagination.links }}
+    </div>
+
+    <!-- Modal de confirmação -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Exclusão</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Tem certeza de que deseja excluir este mangá e todos os seus capítulos?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <form method="POST" id="deleteForm">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <button type="submit" class="btn btn-danger">Excluir</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        $('#confirmDeleteModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var mangaId = button.data('id');
+            var formAction = "{{ url_for('routes.delete_manga', id=0) }}".replace("0", mangaId);
+            $('#deleteForm').attr('action', formAction);
+            $('#deleteForm').attr('method', 'POST');  // Garantir que o método POST está definido aqui
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Capítulo{% endblock %}
+
+{% block content %}
+    <h2>Editar Capítulo</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label for="id">ID do Capítulo</label>
+            <input type="text" class="form-control" id="id" name="id" value="{{ capitulo.id }}" disabled>
+        </div>
+        <div class="form-group">
+            <label for="nome">Nome do Capítulo</label>
+            <input type="text" class="form-control" id="nome" name="nome" value="{{ capitulo.numero }}" required>
+        </div>
+        <div class="form-group">
+            <label for="arquivo_pdf">URL do PDF</label>
+            <input type="text" class="form-control" id="arquivo_pdf" name="arquivo_pdf" value="{{ url_for('static', filename=capitulo.arquivo_pdf) }}" disabled>
+        </div>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+    </form>
+{% endblock %}
