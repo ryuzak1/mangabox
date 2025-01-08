@@ -7401,3 +7401,11 @@ app/__pycache__/routes.cpython-311.pyc
 static/pdfs/Boruto
 var/app-instance/manga.db
 pyvenv.cfg
+static/pdfs/
+Scripts/
+Lib/
+__pycache__/
+static/covers/
+flask_session/
+var/migrations/
+var/static/pdfs/

@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for,jsonify
+from flask import Blueprint, render_template, request, redirect, url_for,jsonify,session,flash
 from config import db
-from app.models import Manga, Capitulo
+from app.models import Manga, Capitulo, User
 from flask_paginate import Pagination, get_page_parameter
 from datetime import datetime
 import os
@@ -10,7 +10,7 @@ from fpdf import FPDF
 from PIL import Image
 from io import BytesIO
 import logging
-
+from functools import wraps
 # Configurar logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -86,12 +86,43 @@ def processar_capitulos(url_base, capitulo_inicial, capitulo_final, manga_id, no
         capitulo_atual += 0.5
 
 
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user' not in session:
+            return redirect(url_for('routes.login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 @routes.route('/')
-def index():
-    mangas = Manga.query.all()
+@login_required
+def home():
     total_mangas = Manga.query.count()
-    categorias = db.session.query(Manga.categoria, db.func.count(Manga.categoria)).group_by(Manga.categoria).all()
-    return render_template('index.html', mangas=mangas, total_mangas=total_mangas, categorias=categorias)
+    total_capitulos = Capitulo.query.count()
+    mangas = Manga.query.order_by(Manga.id.desc()).limit(5).all()
+    return render_template('index.html', total_mangas=total_mangas, total_capitulos=total_capitulos, mangas=mangas)
+
+
+
+
+@routes.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        if username == 'admin' and password == 'ninda':
+            session['user'] = username
+            return redirect(url_for('routes.home'))
+        else:
+            flash('Usuário ou senha incorretos!')
+    
+    return render_template('login.html')
+
+
 
 @routes.route('/add', methods=['GET', 'POST'])
 def add():
@@ -119,13 +150,16 @@ def add_full_manga():
     if request.method == 'POST':
         url_base = request.form.get('url_base')
         capitulos_e_urls, manga_id, nome_manga = adicionar_manga_completo(url_base)
-        total_chapters = len(capitulos_e_urls)
+        
+        for numero_capitulo, capitulo_url in capitulos_e_urls:
+            try:
+                # Processar capítulo completo usando a lógica existente
+                processar_capitulos(url_base, float(numero_capitulo), float(numero_capitulo), manga_id, nome_manga)
+                logging.info(f"Capítulo {numero_capitulo} adicionado com sucesso.")
+            except Exception as e:
+                logging.error(f"Erro ao processar o capítulo {numero_capitulo}: {e}")
 
-        response = {
-            'total_chapters': total_chapters,
-            'chapters': [{'number': capitulo, 'url': url, 'manga_id': manga_id, 'nome_manga': nome_manga} for capitulo, url in capitulos_e_urls if url]
-        }
-        return jsonify(response)
+        return jsonify({'success': True, 'message': 'Mangá completo adicionado com sucesso.'})
     
     return render_template('add_full.html')
 
@@ -150,7 +184,44 @@ def adicionar_manga_completo(url_base):
     descricao = data.find('p').get_text() if data.find('p') else 'Descrição Não Encontrada'
     categoria = 'Indefinido'
     
-    novo_manga = Manga(nome=titulo, descricao=descricao, categoria=categoria, url_base=url_base)
+    # Obter URL da imagem da capa
+    poster_div = sheader.find('div', class_='poster')
+    poster_url = poster_div.find('img')['src'] if poster_div and poster_div.find('img') else None
+
+    # Log do link da imagem de capa para verificar
+    logging.info(f"URL da imagem de capa: {poster_url}")
+
+    # Baixar a imagem da capa se a URL estiver disponível
+    if poster_url:
+        try:
+            logging.info("Iniciando download da imagem de capa.")
+            img_data = requests.get(poster_url).content
+            img_name = f"{titulo.replace(' ', '_')}_cover.jpg"
+            img_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'static', 'covers', img_name)  # Usar o diretório existente
+
+            # Criar o diretório se não existir
+            os.makedirs(os.path.dirname(img_path), exist_ok=True)
+
+            # Salvar a imagem da capa localmente
+            with open(img_path, 'wb') as handler:
+                handler.write(img_data)
+            logging.info(f"Imagem de capa salva com sucesso em {img_path}.")
+
+            # Verificar se o arquivo foi salvo e obter seu tamanho
+            if os.path.exists(img_path):
+                file_size = os.path.getsize(img_path)
+                logging.info(f"Arquivo salvo: {img_path} ({file_size} bytes)")
+            else:
+                logging.error("Erro: o arquivo da imagem de capa não foi encontrado no diretório.")
+
+        except Exception as e:
+            logging.error(f"Erro ao baixar ou salvar a imagem de capa: {e}")
+            img_name = None
+    else:
+        logging.warning("URL da imagem de capa não encontrada.")
+        img_name = None
+
+    novo_manga = Manga(nome=titulo, descricao=descricao, categoria=categoria, url_base=url_base, capa=img_name)
     db.session.add(novo_manga)
     db.session.commit()
     
@@ -186,17 +257,6 @@ def processar_capitulo_route():
     url_tratada = chapter_url.rsplit('-', 1)[0] + '-'
     processar_capitulos(url_tratada, float(chapter_number), float(chapter_number), manga_id, nome_manga)
     return jsonify(success=True)
-
-
-
-
-
-
-
-
-
-
-
 
 @routes.route('/edit/<int:id>', methods=['GET', 'POST'])
 def edit(id):
@@ -311,8 +371,41 @@ def delete_capitulo(id):
     return redirect(url_for('routes.capitulos'))
 
 
+@routes.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        is_admin = 'is_admin' in request.form  # Ajuste para verificar o checkbox
+        
+        # Verificar se o usuário ou email já existe
+        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+            flash('Usuário ou email já existe!', 'danger')
+        else:
+            user = User(username=username, email=email, password=password, is_admin=is_admin)
+            db.session.add(user)
+            db.session.commit()
+            flash('Usuário cadastrado com sucesso!', 'success')
+    
+    return render_template('register.html')
+
+@routes.route('/users', methods=['GET', 'POST'])
+
+def list_users():
+    search_query = request.form.get('search_query', '')
+    if search_query:
+        users = User.query.filter(User.username.contains(search_query) | User.email.contains(search_query)).all()
+    else:
+        users = User.query.all()
+    return render_template('list_users.html', users=users, search_query=search_query)
 
 
+@routes.route('/delete_user/<int:user_id>', methods=['POST'])
 
-
-
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash('Usuário excluído com sucesso!', 'success')
+    return redirect(url_for('routes.list_users'))

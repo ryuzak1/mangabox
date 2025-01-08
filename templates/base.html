@@ -13,9 +13,12 @@
 <body>
     <header class="navbar navbar-expand-lg navbar-dark bg-success">
         <a class="navbar-brand" href="/">Dashboard de Mangás</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#sidebar" aria-controls="sidebar" aria-expanded="true" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
     </header>
     <div class="d-flex">
-        <nav id="sidebar" class="bg-dark">
+        <nav id="sidebar" class="bg-dark collapse show">
             <div class="p-4">
                 <h1><a href="/" class="logo">Dashboard</a></h1>
                 <ul class="list-unstyled components mb-5">
@@ -40,6 +43,19 @@
                     </li>
                     <li class="{% if request.path == '/capitulos' %}active{% endif %}">
                         <a href="/capitulos"><i class="fas fa-file-alt"></i> Capítulos</a>
+                    </li>
+                    <li>
+                        <a href="#userSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
+                            <i class="fas fa-users"></i> Usuários
+                        </a>
+                        <ul class="collapse list-unstyled" id="userSubmenu">
+                            <li>
+                                <a href="/register"><i class="fas fa-user-plus"></i> Add Usuário</a>
+                            </li>
+                            <li>
+                                <a href="/users"><i class="fas fa-users"></i> Listar Usuários</a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>

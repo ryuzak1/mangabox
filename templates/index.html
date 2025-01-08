@@ -5,7 +5,8 @@
 {% block content %}
     <h2>Estatísticas</h2>
     <div class="row stats">
-        <div class="col-md-4 stat-card">
+        <!-- Card Total de Mangás -->
+        <div class="col-md-6 stat-card">
             <div class="card text-white bg-primary mb-3">
                 <div class="card-header">Total de Mangás</div>
                 <div class="card-body">
@@ -13,19 +14,18 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-8 stat-card">
-            <div class="card">
-                <div class="card-header">Categorias</div>
+
+        <!-- Card Total de Capítulos -->
+        <div class="col-md-6 stat-card">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-header">Total de Capítulos</div>
                 <div class="card-body">
-                    <ul class="list-group">
-                        {% for categoria, count in categorias %}
-                            <li class="list-group-item">{{ categoria }}: {{ count }}</li>
-                        {% endfor %}
-                    </ul>
+                    <h5 class="card-title">{{ total_capitulos }}</h5>
                 </div>
             </div>
         </div>
     </div>
+
     <h2 class="mt-4">Lista de Mangás</h2>
     <div class="list-group">
         {% for manga in mangas %}

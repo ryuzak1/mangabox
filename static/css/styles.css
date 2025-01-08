@@ -104,3 +104,44 @@ body {
     color: white;
 }
 
+.card {
+    margin: 20px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+    font-size: 1.25rem;
+    color: #fff;
+}
+
+.card-header {
+    font-size: 1.5rem;
+    color: #fff;
+}
+/* Outros estilos existentes */
+
+.custom-checkbox {
+    position: relative; 
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.custom-checkbox .form-check-label {
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+
+.custom-checkbox .form-check-input {
+    position: absolute;
+    right: 0; /* Mover o checkbox para a direita */
+    margin-top: .3rem;
+}
+/* Outros estilos existentes */
+
+img.rounded-circle {
+    object-fit: cover;
+}
+

@@ -11,10 +11,13 @@
     <ul class="list-group">
         {% for manga in mangas %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    {{ manga.nome }}
-                    <br>
-                    <small>Categoria: {{ manga.categoria }}</small>
+                <div class="d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='covers/' ~ (manga.capa or 'default_cover.png')) }}" class="rounded-circle mr-3" width="50" height="50" alt="Capa do Manga">
+                    <div>
+                        {{ manga.nome }}
+                        <br>
+                        <small>Categoria: {{ manga.categoria }}</small>
+                    </div>
                 </div>
                 <div>
                     <a href="{{ url_for('routes.edit', id=manga.id) }}" class="btn btn-info btn-sm">Editar</a>

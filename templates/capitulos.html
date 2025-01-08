@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Capítulos{% endblock %}
+{% block title %}Listar Capítulos{% endblock %}
 
 {% block content %}
-    <h2>Capítulos</h2>
+    <h2>Listar Capítulos</h2>
     <form method="GET" action="/capitulos" class="form-inline mb-4">
         <input type="text" class="form-control mr-sm-2" name="query" placeholder="Pesquisar Capítulo" value="{{ query }}">
         <button type="submit" class="btn btn-primary">Pesquisar</button>
@@ -11,10 +11,13 @@
     <ul class="list-group">
         {% for capitulo in capitulos %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    Capítulo {{ capitulo.numero }} - <a href="{{ url_for('static', filename=capitulo.arquivo_pdf) }}">Ver PDF</a>
-                    <br>
-                    <small>Data de Cadastro: {{ capitulo.data_cadastro.strftime('%d/%m/%Y %H:%M') }}</small>
+                <div class="d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='covers/' ~ (capitulo.manga.capa or 'default_cover.png')) }}" class="rounded-circle mr-3" width="50" height="50" alt="Capa do Manga">
+                    <div>
+                        {{ capitulo.numero }}
+                        <br>
+                        <small>{{ capitulo.manga.nome }}</small>
+                    </div>
                 </div>
                 <div>
                     <a href="{{ url_for('routes.edit_capitulo', id=capitulo.id) }}" class="btn btn-info btn-sm">Editar</a>
@@ -43,6 +46,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <form method="POST" id="deleteForm">
+                        <input type="hidden" name="_method" value="DELETE">
                         <button type="submit" class="btn btn-danger">Excluir</button>
                     </form>
                 </div>
