@@ -48,23 +48,43 @@ def criar_pdf(imagens, nome_arquivo, qualidade=90, resolucao=(600, 760)):
         os.remove(temp_file)
 
 def processar_capitulos(url_base, capitulo_inicial, capitulo_final, manga_id, nome_manga, qualidade=90, resolucao=(600, 760)):
-    for capitulo in range(capitulo_inicial, capitulo_final + 1):
+    capitulo_atual = float(capitulo_inicial)
+    capitulo_final = float(capitulo_final)
+    
+    while capitulo_atual <= capitulo_final:
         try:
-            url = f"{url_base}{capitulo}/"
-            nome_capitulo = f"{nome_manga}-{capitulo}"
+            if capitulo_atual.is_integer():
+                capitulo_str = str(int(capitulo_atual))
+            else:
+                # Concatenar corretamente a parte inteira com a parte decimal
+                parte_inteira = int(capitulo_atual)
+                parte_decimal = int((capitulo_atual - parte_inteira) * 10)
+                print(parte_decimal)
+                print(parte_inteira)
+                capitulo_str = parte_decimal
+                print(capitulo_str)
+
+            print(url_base)    
+            url = f"{url_base}{capitulo_str}/"
+            print(url)  
+            logging.info(f'URL completa do capítulo: {url}')  # Adicionando log para verificar URL completa
+            nome_capitulo = f"{nome_manga}-{capitulo_atual}"
             nome_arquivo_pdf = os.path.join('static', 'pdfs', f'{nome_capitulo}.pdf')
             if not os.path.exists('static/pdfs'):
                 os.makedirs('static/pdfs')
-            logging.info(f'Baixando imagens do capítulo {capitulo} de {nome_manga}')
+            logging.info(f'Baixando imagens do capítulo {capitulo_atual} de {nome_manga}')
             imagens = baixar_imagens(url)
-            logging.info(f'Criando PDF para o capítulo {capitulo} de {nome_manga}')
+            logging.info(f'Criando PDF para o capítulo {capitulo_atual} de {nome_manga}')
             criar_pdf(imagens, nome_arquivo_pdf, qualidade, resolucao)
             novo_capitulo = Capitulo(numero=nome_capitulo, arquivo_pdf=f'pdfs/{nome_capitulo}.pdf', manga_id=manga_id)
             db.session.add(novo_capitulo)
             db.session.commit()
-            logging.info(f'Capítulo {capitulo} de {nome_manga} salvo com sucesso no banco de dados')
+            logging.info(f'Capítulo {capitulo_atual} de {nome_manga} salvo com sucesso no banco de dados')
         except Exception as e:
-            logging.error(f"Erro ao processar o capítulo {capitulo} de {nome_manga}: {e}")
+            logging.error(f"Erro ao processar o capítulo {capitulo_atual} de {nome_manga}: {e}")
+
+        capitulo_atual += 0.5
+
 
 @routes.route('/')
 def index():
@@ -92,7 +112,6 @@ def add():
         return redirect(url_for('routes.index'))
     
     return render_template('add.html')
-
 
 
 @routes.route('/add_full', methods=['GET', 'POST'], endpoint='add_full_manga')
@@ -159,14 +178,15 @@ def adicionar_manga_completo(url_base):
 
 
 @routes.route('/process_chapter', methods=['POST'])
-def process_chapter():
+def processar_capitulo_route():
     chapter_url = request.form.get('chapter_url')
     chapter_number = request.form.get('chapter_number')
     manga_id = request.form.get('manga_id')
     nome_manga = request.form.get('nome_manga')
     url_tratada = chapter_url.rsplit('-', 1)[0] + '-'
-    processar_capitulos(url_tratada, int(chapter_number), int(chapter_number), manga_id, nome_manga)
+    processar_capitulos(url_tratada, float(chapter_number), float(chapter_number), manga_id, nome_manga)
     return jsonify(success=True)
+
 
 
 
@@ -289,7 +309,6 @@ def delete_capitulo(id):
         db.session.delete(capitulo)
         db.session.commit()
     return redirect(url_for('routes.capitulos'))
-
 
 
 
