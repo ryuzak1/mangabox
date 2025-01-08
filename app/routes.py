@@ -150,16 +150,13 @@ def add_full_manga():
     if request.method == 'POST':
         url_base = request.form.get('url_base')
         capitulos_e_urls, manga_id, nome_manga = adicionar_manga_completo(url_base)
-        
-        for numero_capitulo, capitulo_url in capitulos_e_urls:
-            try:
-                # Processar capítulo completo usando a lógica existente
-                processar_capitulos(url_base, float(numero_capitulo), float(numero_capitulo), manga_id, nome_manga)
-                logging.info(f"Capítulo {numero_capitulo} adicionado com sucesso.")
-            except Exception as e:
-                logging.error(f"Erro ao processar o capítulo {numero_capitulo}: {e}")
+        total_chapters = len(capitulos_e_urls)
 
-        return jsonify({'success': True, 'message': 'Mangá completo adicionado com sucesso.'})
+        response = {
+            'total_chapters': total_chapters,
+            'chapters': [{'number': capitulo, 'url': url, 'manga_id': manga_id, 'nome_manga': nome_manga} for capitulo, url in capitulos_e_urls if url]
+        }
+        return jsonify(response)
     
     return render_template('add_full.html')
 
@@ -409,3 +406,4 @@ def delete_user(user_id):
     db.session.commit()
     flash('Usuário excluído com sucesso!', 'success')
     return redirect(url_for('routes.list_users'))
+
