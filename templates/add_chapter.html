@@ -4,7 +4,7 @@
 
 {% block content %}
     <h2>Adicionar Capítulo</h2>
-    <form method="POST">
+    <form method="POST" id="addChapterForm" enctype="multipart/form-data">
         <div class="form-group">
             <label for="nome">Nome do Mangá</label>
             <input type="text" class="form-control" id="nome" name="nome" value="{{ manga.nome }}" disabled>
@@ -15,12 +15,91 @@
         </div>
         <div class="form-group">
             <label for="url_base">URL Base</label>
-            <input type="text" class="form-control" id="url_base" name="url_base" value="{{ manga.url_base }}" disabled>
+            <input type="text" class="form-control" id="url_base" name="url_base" value="{{ manga.url_base }}">
         </div>
         <div class="form-group">
             <label for="numero_capitulo">Número do Capítulo</label>
             <input type="text" class="form-control" id="numero_capitulo" name="numero_capitulo" required>
         </div>
+        <div class="form-group">
+            <label for="pdf_capitulo">Upload de PDF</label>
+            <input type="file" class="form-control" id="pdf_capitulo" name="pdf_capitulo" accept="application/pdf">
+        </div>
         <button type="submit" class="btn btn-primary">Adicionar Capítulo</button>
     </form>
+    <div class="progress mt-3" >
+        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+
+    <!-- Modal de Sucesso -->
+    <div class="modal fade" id="successModal" tabindex="-1" role="dialog" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="successModalLabel">Sucesso</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Capítulo adicionado com sucesso!
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="window.location.href=window.location.href;">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Erro -->
+    <div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="errorModalLabel">Erro</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Ocorreu um erro ao adicionar o capítulo. Por favor, tente novamente.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="window.location.href=window.location.href;">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.getElementById('addChapterForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            var formData = new FormData(this);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '{{ url_for("routes.add_chapter", id=manga.id) }}', true);
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    var percentComplete = (e.loaded / e.total) * 100;
+                    document.getElementById('progressBar').style.width = percentComplete + '%';
+                    document.getElementById('progressBar').setAttribute('aria-valuenow', percentComplete);
+                }
+            });
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    document.getElementById('progressBar').style.width = '100%';
+                    $('#successModal').modal('show');
+                } else {
+                    $('#errorModal').modal('show');
+                }
+            };
+
+            xhr.send(formData);
+            document.getElementById('progressContainer').style.display = 'block'; // Show progress bar
+        });
+    </script>
 {% endblock %}

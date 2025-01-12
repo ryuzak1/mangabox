@@ -4,8 +4,8 @@
 
 {% block content %}
     <h2>Listar Mangás</h2>
-    <form method="GET" action="/listar_mangas" class="form-inline mb-4">
-        <input type="text" class="form-control mr-sm-2" name="query" placeholder="Pesquisar Mangá" value="{{ query }}">
+    <form method="GET" action="/listar_mangas" class="form-inline mb-4" id="searchForm">
+        <input type="text" class="form-control mr-sm-2" name="query" id="searchInput" placeholder="Pesquisar Mangá" value="{{ query }}">
         <button type="submit" class="btn btn-primary">Pesquisar</button>
     </form>
     <ul class="list-group">
@@ -16,7 +16,9 @@
                     <div>
                         {{ manga.nome }}
                         <br>
-                        <small>Categoria: {{ manga.categoria }}</small>
+                        <small>Ano de Lançamento: {{ manga.ano_lancamento }}</small>
+                        <br>
+                        <small>Nota: {{ manga.nota or 0 }}</small>
                     </div>
                 </div>
                 <div>
@@ -64,6 +66,22 @@
             var formAction = "{{ url_for('routes.delete_manga', id=0) }}".replace("0", mangaId);
             $('#deleteForm').attr('action', formAction);
             $('#deleteForm').attr('method', 'POST');  // Garantir que o método POST está definido aqui
+        });
+
+        // Adicionar função para pesquisa automática
+        let typingTimer;
+        let doneTypingInterval = 500; // Tempo de espera em milissegundos após o usuário parar de digitar
+        let searchInput = document.getElementById('searchInput');
+
+        searchInput.addEventListener('keyup', () => {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                document.getElementById('searchForm').submit();
+            }, doneTypingInterval);
+        });
+
+        searchInput.addEventListener('keydown', () => {
+            clearTimeout(typingTimer);
         });
     </script>
 {% endblock %}

@@ -1,3 +1,5 @@
+/* Estilos existentes */
+
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
@@ -93,6 +95,7 @@ body {
 .list-group {
     margin-top: 20px;
 }
+
 #progress-container {
     width: 100%;
     margin-top: 20px;
@@ -120,6 +123,21 @@ body {
     font-size: 1.5rem;
     color: #fff;
 }
+
+/* Estilos personalizados para o Tagsinput */
+
+.bootstrap-tagsinput {
+    width: 100%;
+}
+
+.bootstrap-tagsinput .tag {
+    background-color: #007bff;
+    color: white;
+    padding: 0.2em 0.6em;
+    margin-right: 2px;
+    border-radius: 3px;
+}
+
 /* Outros estilos existentes */
 
 .custom-checkbox {
@@ -139,9 +157,7 @@ body {
     right: 0; /* Mover o checkbox para a direita */
     margin-top: .3rem;
 }
-/* Outros estilos existentes */
 
 img.rounded-circle {
     object-fit: cover;
 }
-

@@ -8,8 +8,10 @@ class Manga(db.Model):
     categoria = db.Column(db.String(50), nullable=False)
     url_base = db.Column(db.String(200), nullable=False)
     capa = db.Column(db.String(200), nullable=True)  # Novo campo para a imagem da capa
+    ano_lancamento = db.Column(db.String(4), nullable=True)  # Novo campo para o ano de lançamento
+    nota = db.Column(db.String(10), nullable=True)  # Novo campo para a nota
+    data_adicao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)  # Campo para data de adição
     capitulos = db.relationship('Capitulo', backref='manga', lazy=True)
-
 
 class Capitulo(db.Model):
     id = db.Column(db.Integer, primary_key=True)

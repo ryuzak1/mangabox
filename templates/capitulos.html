@@ -14,9 +14,10 @@
                 <div class="d-flex align-items-center">
                     <img src="{{ url_for('static', filename='covers/' ~ (capitulo.manga.capa or 'default_cover.png')) }}" class="rounded-circle mr-3" width="50" height="50" alt="Capa do Manga">
                     <div>
-                        {{ capitulo.numero }}
+                        {{ capitulo.manga.nome }}-{{ capitulo.numero }}
+                        <a href="{{ url_for('static', filename=capitulo.arquivo_pdf) }}" target="_blank">Ver PDF</a>
                         <br>
-                        <small>{{ capitulo.manga.nome }}</small>
+                        <small>Adicionado em: {{ capitulo.data_cadastro.strftime('%d/%m/%Y %H:%M:%S') }}</small>
                     </div>
                 </div>
                 <div>

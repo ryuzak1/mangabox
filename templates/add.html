@@ -4,7 +4,7 @@
 
 {% block content %}
     <h2>Adicionar Mangá</h2>
-    <form method="POST" id="addMangaForm">
+    <form method="POST" id="addMangaForm" enctype="multipart/form-data">
         <div class="form-group">
             <label for="nome">Nome do Mangá</label>
             <input type="text" class="form-control" id="nome" name="nome" required>
@@ -15,19 +15,15 @@
         </div>
         <div class="form-group">
             <label for="categoria">Categoria</label>
-            <input type="text" class="form-control" id="categoria" name="categoria" required>
+            <input type="text" class="form-control" id="categoria" name="categoria" data-role="tagsinput">
         </div>
         <div class="form-group">
             <label for="url_base">URL Base</label>
             <input type="text" class="form-control" id="url_base" name="url_base" required>
         </div>
         <div class="form-group">
-            <label for="capitulo_inicial">Capítulo Inicial</label>
-            <input type="number" class="form-control" id="capitulo_inicial" name="capitulo_inicial">
-        </div>
-        <div class="form-group">
-            <label for="capitulo_final">Capítulo Final</label>
-            <input type="number" class="form-control" id="capitulo_final" name="capitulo_final">
+            <label for="capa">Imagem de Capa</label>
+            <input type="file" class="form-control" id="capa" name="capa" accept="image/*" style="border: none; background-color: transparent;">
         </div>
         <button type="submit" class="btn btn-primary">Adicionar Mangá</button>
         <div id="loadingSpinner" class="spinner-border text-primary" role="status" style="display: none;">
@@ -37,9 +33,15 @@
 {% endblock %}
 
 {% block scripts %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.min.js"></script>
     <script>
         document.getElementById('addMangaForm').addEventListener('submit', function() {
             document.getElementById('loadingSpinner').style.display = 'inline-block';
+        });
+        $(document).ready(function() {
+            $('#categoria').tagsinput({
+                trimValue: true
+            });
         });
     </script>
 {% endblock %}

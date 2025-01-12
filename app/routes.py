@@ -11,6 +11,8 @@ from PIL import Image
 from io import BytesIO
 import logging
 from functools import wraps
+import re
+
 # Configurar logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -32,6 +34,55 @@ def baixar_imagens(url):
             imagens.append(img_data)
     return imagens
 
+def baixar_imagens_fonte_2(url):
+
+
+    logging.info(f"Buscando URL: {url}")
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        logging.error(f"Erro ao fazer a requisição para a URL {url}: {e}")
+        return []
+
+    soup = BeautifulSoup(response.content, 'html.parser')
+    reading_content = soup.find('div', class_='reading-content')
+    
+    if not reading_content:
+        logging.warning("Div 'reading-content' não encontrada")
+        return []
+
+    logging.info("Div 'reading-content' encontrada")
+
+    page_breaks = reading_content.find_all('div', class_='page-break')
+    if not page_breaks:
+        logging.warning("Divs 'page-break' não encontradas dentro de 'reading-content'")
+        return []
+
+    imagens = []
+    for i, page_break in enumerate(page_breaks):
+        img_tag = page_break.find('img')
+        if img_tag:
+            img_url = img_tag.get('data-src') or img_tag.get('src')
+            logging.info(f"URL da Imagem: {img_url}")
+
+            try:
+                img_response = requests.get(img_url)
+                img_response.raise_for_status()
+                img_data = Image.open(BytesIO(img_response.content)).convert('RGB')
+                imagens.append(img_data)
+            except requests.RequestException as e:
+                logging.error(f"Erro ao baixar a imagem da URL {img_url}: {e}")
+            except Exception as e:
+                logging.error(f"Erro ao processar a imagem da URL {img_url}: {e}")
+        else:
+            logging.warning(f"Tag 'img' não encontrada dentro de 'page-break' {i+1}")
+
+    return imagens
+
+
+
 def criar_pdf(imagens, nome_arquivo, qualidade=90, resolucao=(600, 760)):
     pdf = FPDF()
     temp_files = []
@@ -46,6 +97,65 @@ def criar_pdf(imagens, nome_arquivo, qualidade=90, resolucao=(600, 760)):
     pdf.output(nome_arquivo)
     for temp_file in temp_files:
         os.remove(temp_file)
+
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from PIL import Image
+import io
+import os
+
+
+def dividir_imagem(imagem, altura_pagina):
+    largura, altura = imagem.size
+    if altura <= altura_pagina:
+        return [imagem]
+    
+    partes = []
+    topo = 0
+    while topo < altura:
+        parte_inferior = min(topo + altura_pagina, altura)
+        parte = imagem.crop((0, topo, largura, parte_inferior))
+        partes.append(parte)
+        topo += altura_pagina
+    return partes
+
+
+
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+import io
+import os
+
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+import io
+import os
+
+def criar_pdf_fonte_2(imagens, nome_arquivo, qualidade=90):
+    largura_pagina, altura_pagina = A4
+    c = canvas.Canvas(nome_arquivo, pagesize=A4)
+    temp_files = []
+
+    for idx, imagem in enumerate(imagens):
+        partes = dividir_imagem(imagem, altura_pagina)
+        for parte in partes:
+            buffer = io.BytesIO()
+            parte.save(buffer, format="JPEG", quality=qualidade)
+            buffer.seek(0)
+            temp_file = f"temp_img_{idx}.jpg"
+            with open(temp_file, 'wb') as f:
+                f.write(buffer.getbuffer())
+            c.drawImage(temp_file, 0, 0, largura_pagina, altura_pagina, preserveAspectRatio=True)
+            c.showPage()
+            temp_files.append(temp_file)
+
+    c.save()
+
+    # Remover arquivos temporários
+    for temp_file in temp_files:
+        os.remove(temp_file)
+
+
 
 def processar_capitulos(url_base, capitulo_inicial, capitulo_final, manga_id, nome_manga, qualidade=90, resolucao=(600, 760)):
     capitulo_atual = float(capitulo_inicial)
@@ -67,7 +177,7 @@ def processar_capitulos(url_base, capitulo_inicial, capitulo_final, manga_id, no
             print(url_base)    
             url = f"{url_base}{capitulo_str}/"
             print(url)  
-            logging.info(f'URL completa do capítulo: {url}')  # Adicionando log para verificar URL completa
+            logging.info(f'URL completa do capítulo Fonte 1: {url}')  # Adicionando log para verificar URL completa
             nome_capitulo = f"{nome_manga}-{capitulo_atual}"
             nome_arquivo_pdf = os.path.join('static', 'pdfs', f'{nome_capitulo}.pdf')
             if not os.path.exists('static/pdfs'):
@@ -76,7 +186,7 @@ def processar_capitulos(url_base, capitulo_inicial, capitulo_final, manga_id, no
             imagens = baixar_imagens(url)
             logging.info(f'Criando PDF para o capítulo {capitulo_atual} de {nome_manga}')
             criar_pdf(imagens, nome_arquivo_pdf, qualidade, resolucao)
-            novo_capitulo = Capitulo(numero=nome_capitulo, arquivo_pdf=f'pdfs/{nome_capitulo}.pdf', manga_id=manga_id)
+            novo_capitulo = Capitulo(numero=capitulo_atual, arquivo_pdf=f'pdfs/{nome_capitulo}.pdf', manga_id=manga_id)
             db.session.add(novo_capitulo)
             db.session.commit()
             logging.info(f'Capítulo {capitulo_atual} de {nome_manga} salvo com sucesso no banco de dados')
@@ -84,6 +194,46 @@ def processar_capitulos(url_base, capitulo_inicial, capitulo_final, manga_id, no
             logging.error(f"Erro ao processar o capítulo {capitulo_atual} de {nome_manga}: {e}")
 
         capitulo_atual += 0.5
+
+def processar_capitulos_fonte_2(url_base, capitulo_inicial, capitulo_final, manga_id, nome_manga, qualidade=90, resolucao=(600, 760)):
+    capitulo_atual = float(capitulo_inicial)
+    capitulo_final = float(capitulo_final)
+    
+    nome_manga_limpo = re.sub(r'\s+', ' ', nome_manga).strip()  # Remover novas linhas e espaços extras
+
+    while capitulo_atual <= capitulo_final:
+        try:
+            if capitulo_atual.is_integer():
+                capitulo_str = str(int(capitulo_atual)).zfill(2)  # Formatar com dois dígitos
+            else:
+                parte_inteira = int(capitulo_atual)
+                parte_decimal = int((capitulo_atual - parte_inteira) * 10)
+                capitulo_str = f"{parte_inteira:02d}-{parte_decimal}"  # Formatar a parte inteira com dois dígitos
+
+            url = f"{url_base}{capitulo_str}/"
+            logging.info(f'URL completa do capítulo: {url}')
+            nome_capitulo = f"{nome_manga_limpo}-{capitulo_str}"
+            nome_arquivo_pdf = os.path.join('static', 'pdfs', f'{nome_capitulo}.pdf')
+            if not os.path.exists('static/pdfs'):
+                os.makedirs('static/pdfs')
+            logging.info(f'Baixando imagens do capítulo {capitulo_str} de {nome_manga}')
+            
+            imagens = baixar_imagens_fonte_2(url)
+            logging.info(f'Criando PDF para o capítulo {capitulo_str} de {nome_manga}')
+            criar_pdf(imagens, nome_arquivo_pdf, qualidade)
+            novo_capitulo = Capitulo(numero=capitulo_atual, arquivo_pdf=f'pdfs/{nome_capitulo}.pdf', manga_id=manga_id)
+            db.session.add(novo_capitulo)
+            db.session.commit()
+            logging.info(f'Capítulo {capitulo_str} de {nome_manga} salvo com sucesso no banco de dados')
+
+        except Exception as e:
+            logging.error(f"Erro ao processar o capítulo {capitulo_str} de {nome_manga}: {e}")
+
+        capitulo_atual += 0.5
+
+
+
+
 
 
 
@@ -131,34 +281,52 @@ def add():
         descricao = request.form['descricao']
         categoria = request.form['categoria']
         url_base = request.form['url_base']
-        capitulo_inicial = int(request.form['capitulo_inicial'])
-        capitulo_final = int(request.form['capitulo_final'])
+        capa = request.files['capa']
         
-        novo_manga = Manga(nome=nome, descricao=descricao, categoria=categoria, url_base=url_base)
+        # Salvar a imagem da capa
+        if capa and capa.filename != '':
+            capa_filename = f"{nome.replace(' ', '_')}_cover.jpg"
+            capa_path = os.path.join('static', 'covers', capa_filename)
+            os.makedirs(os.path.dirname(capa_path), exist_ok=True)
+            capa.save(capa_path)
+        else:
+            capa_filename = None
+
+        novo_manga = Manga(nome=nome, descricao=descricao, categoria=categoria, url_base=url_base, capa=capa_filename)
         db.session.add(novo_manga)
         db.session.commit()
         
-        processar_capitulos(url_base, capitulo_inicial, capitulo_final, novo_manga.id, nome)
-        
-        return redirect(url_for('routes.index'))
+        return redirect(url_for('routes.listar_mangas'))
     
     return render_template('add.html')
+
+
+
 
 
 @routes.route('/add_full', methods=['GET', 'POST'], endpoint='add_full_manga')
 def add_full_manga():
     if request.method == 'POST':
         url_base = request.form.get('url_base')
-        capitulos_e_urls, manga_id, nome_manga = adicionar_manga_completo(url_base)
+        fonte = request.form.get('fonte')
+
+        if fonte == '1':
+            capitulos_e_urls, manga_id, nome_manga, categorias = adicionar_manga_completo(url_base)
+        elif fonte == '2':
+            capitulos_e_urls, manga_id, nome_manga, categorias = adicionar_manga_completo_fonte_2(url_base)
+        else:
+            return jsonify({'error': 'Fonte inválida'}), 400
+
         total_chapters = len(capitulos_e_urls)
 
         response = {
             'total_chapters': total_chapters,
-            'chapters': [{'number': capitulo, 'url': url, 'manga_id': manga_id, 'nome_manga': nome_manga} for capitulo, url in capitulos_e_urls if url]
+            'chapters': [{'number': capitulo, 'url': url, 'manga_id': manga_id, 'nome_manga': nome_manga, 'categorias': categorias} for capitulo, url in capitulos_e_urls if url]
         }
         return jsonify(response)
     
     return render_template('add_full.html')
+
 
 def adicionar_manga_completo(url_base):
     import requests
@@ -178,12 +346,28 @@ def adicionar_manga_completo(url_base):
         return []
 
     titulo = data.find('h1').get_text() if data.find('h1') else 'Título Não Encontrado'
-    descricao = data.find('p').get_text() if data.find('p') else 'Descrição Não Encontrada'
-    categoria = 'Indefinido'
     
+    # Obter ambas as tags <p> que contêm a descrição
+    descricao_tags = data.find_all('p')
+    descricao = ' '.join([p.get_text() for p in descricao_tags if p])  # Concatenar texto de todas as tags <p>
+
+    # Obter categorias
+    generos_div = soup.find('div', class_='sgeneros')
+    categorias = []
+    if generos_div:
+        categorias = [a.get_text().strip() for a in generos_div.find_all('a')]
+
     # Obter URL da imagem da capa
     poster_div = sheader.find('div', class_='poster')
     poster_url = poster_div.find('img')['src'] if poster_div and poster_div.find('img') else None
+
+    # Obter ano de lançamento
+    extra_div = soup.find('div', class_='extra')
+    ano_lancamento = extra_div.find('span', class_='date').get_text() if extra_div and extra_div.find('span', class_='date') else 'Ano Não Encontrado'
+
+    # Obter nota
+    nota_span = soup.find('span', class_='dt_rating_vgs')
+    nota = nota_span.get_text().strip() if nota_span else 'Nota Não Encontrada'
 
     # Log do link da imagem de capa para verificar
     logging.info(f"URL da imagem de capa: {poster_url}")
@@ -218,7 +402,9 @@ def adicionar_manga_completo(url_base):
         logging.warning("URL da imagem de capa não encontrada.")
         img_name = None
 
-    novo_manga = Manga(nome=titulo, descricao=descricao, categoria=categoria, url_base=url_base, capa=img_name)
+    categoria = ', '.join(categorias)  # Converter lista de categorias em string
+
+    novo_manga = Manga(nome=titulo, descricao=descricao, categoria=categoria, ano_lancamento=ano_lancamento, nota=nota, url_base=url_base, capa=img_name)
     db.session.add(novo_manga)
     db.session.commit()
     
@@ -240,9 +426,176 @@ def adicionar_manga_completo(url_base):
             capitulos_e_urls.append((numero_capitulo, capitulo_url))
         else:
             logging.error(f"Div com a classe 'episodiotitle' não encontrada para o URL: {capitulo_url}")
+            logging.info(f"Capítulo: {numero_capitulo}, URL: {capitulo_url}")
             capitulos_e_urls.append((None, capitulo_url))
 
-    return capitulos_e_urls, novo_manga.id, titulo
+    return capitulos_e_urls, novo_manga.id, titulo, categorias
+
+def adicionar_manga_completo_fonte_2(url_base):
+    import requests
+    from bs4 import BeautifulSoup
+    import logging
+    from PIL import Image
+    from io import BytesIO
+    import os
+    import re
+
+    logging.info(f"Buscando URL base: {url_base}")
+    
+    response = requests.get(url_base)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    
+    # Título do Mangá
+    post_title = soup.find('div', class_='post-title')
+    titulo = post_title.find('h1').get_text() if post_title and post_title.find('h1') else 'Título Não Encontrado'
+    logging.info(f"Título do Mangá: {titulo}")
+    
+    # Descrição
+    summary_content = soup.find('div', class_='summary__content')
+    descricao = summary_content.get_text().strip() if summary_content else 'Descrição Não Encontrada'
+    logging.info(f"Descrição: {descricao}")
+    
+    # Categorias
+    genres_content = soup.find('div', class_='genres-content')
+    categorias = list(set([a.get_text().strip() for a in genres_content.find_all('a')])) if genres_content else []
+    logging.info(f"Categorias: {categorias}")
+    
+    # URL da Imagem da Capa
+    summary_image = soup.find('div', class_='summary_image')
+    if summary_image:
+        logging.info("Encontrado 'summary_image'")
+        anchor_tag = summary_image.find('a')
+        if anchor_tag:
+            logging.info("Encontrado 'a' dentro de 'summary_image'")
+            img_tag = anchor_tag.find('img')
+            if img_tag:
+                poster_url = img_tag['data-src']
+                logging.info(f"URL da Imagem da Capa: {poster_url}")
+            else:
+                poster_url = None
+                logging.warning("'img' não encontrada dentro de 'a'")
+        else:
+            poster_url = None
+            logging.warning("'a' não encontrada dentro de 'summary_image'")
+    else:
+        poster_url = None
+        logging.warning("'summary_image' não encontrada")
+
+    # Ano de Lançamento
+    summary_content_wrap = soup.find('div', class_='summary_content_wrap')
+    if summary_content_wrap:
+        logging.info("Encontrado 'summary_content_wrap'")
+        summary_content = summary_content_wrap.find('div', class_='summary_content')
+        if summary_content:
+            logging.info("Encontrado 'summary_content'")
+            post_status = summary_content.find('div', class_='post-status')
+            if post_status:
+                logging.info("Encontrado 'post-status'")
+                summary_content_inner = post_status.find('div', class_='summary-content')
+                if summary_content_inner:
+                    logging.info("Encontrado 'summary-content' dentro de 'post-status'")
+                    a_tag = summary_content_inner.find('a')
+                    if a_tag:
+                        ano_lancamento = a_tag.get_text().strip()
+                        logging.info(f"Conteúdo da tag <a>: {ano_lancamento}")
+                    else:
+                        ano_lancamento = 'Ano Não Encontrado'
+                        logging.warning("'a' não encontrada dentro de 'summary-content'")
+                else:
+                    ano_lancamento = 'Ano Não Encontrado'
+                    logging.warning("'summary-content' não encontrada dentro de 'post-status'")
+            else:
+                ano_lancamento = 'Ano Não Encontrado'
+                logging.warning("'post-status' não encontrada dentro de 'summary_content'")
+        else:
+            ano_lancamento = 'Ano Não Encontrado'
+            logging.warning("'summary_content' não encontrada dentro de 'summary_content_wrap'")
+    else:
+        ano_lancamento = 'Ano Não Encontrado'
+        logging.warning("'summary_content_wrap' não encontrada")
+
+    logging.info(f"Ano de Lançamento: {ano_lancamento}")
+
+    # Nota
+    post_rating = soup.find('div', class_='post-rating')
+    nota_span = post_rating.find('span', class_='score font-meta total_votes')
+    nota = nota_span.get_text().strip() if nota_span else '0'
+    logging.info(f"Nota: {nota}")
+
+    # Baixar a imagem da capa se a URL estiver disponível
+    if poster_url:
+        try:
+            logging.info("Iniciando download da imagem de capa.")
+            img_data = requests.get(poster_url).content
+            
+            # Verificar o formato da imagem
+            img = Image.open(BytesIO(img_data))
+            if img.format == 'WEBP':
+                img = img.convert("RGB")
+                img_extension = 'jpg'
+            else:
+                img_extension = img.format.lower()
+                
+            # Limpar o nome do arquivo
+            img_name = f"{re.sub(r'[^a-zA-Z0-9_]', '', titulo.replace(' ', '_'))}_cover.{img_extension}"
+            img_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'static', 'covers', img_name)  # Usar o diretório existente
+
+            # Criar o diretório se não existir
+            os.makedirs(os.path.dirname(img_path), exist_ok=True)
+
+            # Salvar a imagem da capa localmente
+            img.save(img_path)
+            logging.info(f"Imagem de capa salva com sucesso em {img_path}.")
+
+            # Verificar se o arquivo foi salvo e obter seu tamanho
+            if os.path.exists(img_path):
+                file_size = os.path.getsize(img_path)
+                logging.info(f"Arquivo salvo: {img_path} ({file_size} bytes)")
+            else:
+                logging.error("Erro: o arquivo da imagem de capa não foi encontrado no diretório.")
+
+        except Exception as e:
+            logging.error(f"Erro ao baixar ou salvar a imagem de capa: {e}")
+            img_name = None
+    else:
+        logging.warning("URL da imagem de capa não encontrada.")
+        img_name = None
+
+    categoria = ', '.join(categorias)  # Converter lista de categorias em string
+
+    novo_manga = Manga(nome=titulo, descricao=descricao, categoria=categoria, ano_lancamento=ano_lancamento, nota=nota, url_base=url_base, capa=img_name)
+    db.session.add(novo_manga)
+    db.session.commit()
+    
+    # Capítulos e URLs
+    capitulos_e_urls = []
+    sub_chap_list = soup.find('ul', class_='sub-chap-list')
+    if sub_chap_list:
+        for li in sub_chap_list.find_all('li'):
+            capitulo_url = li.find('a')['href'] if li.find('a') else None
+            capitulo_text = li.find('a').get_text().strip() if li.find('a') else 'Número Não Encontrado'
+            numero_capitulo = capitulo_text.replace('Capítulo', '').strip()
+            logging.info(f"Capítulo: {numero_capitulo}, URL: {capitulo_url}")
+            capitulos_e_urls.append((numero_capitulo, capitulo_url))
+    else:
+        logging.error("UL 'sub-chap-list' não encontrada.")
+
+    # Garantir que capitulos_e_urls esteja sempre definida
+    if not capitulos_e_urls:
+        logging.warning("Nenhum capítulo encontrado, adicionando valor padrão 'SEM URL'.")
+        capitulos_e_urls = [("1", "SEM URL")]
+
+    return capitulos_e_urls, novo_manga.id, titulo, categorias
+
+
+
+
+
+
+
+
+
+
 
 
 @routes.route('/process_chapter', methods=['POST'])
@@ -251,9 +604,20 @@ def processar_capitulo_route():
     chapter_number = request.form.get('chapter_number')
     manga_id = request.form.get('manga_id')
     nome_manga = request.form.get('nome_manga')
+    fonte = request.form.get('fonte')
     url_tratada = chapter_url.rsplit('-', 1)[0] + '-'
-    processar_capitulos(url_tratada, float(chapter_number), float(chapter_number), manga_id, nome_manga)
+
+    print(f"FONTE: {fonte}")
+    # Verificar se é uma fonte específica e chamar a função correspondente
+    if fonte == '2':
+        processar_capitulos_fonte_2(url_tratada, float(chapter_number), float(chapter_number), manga_id, nome_manga)
+    elif fonte == '1':
+        processar_capitulos(url_tratada, float(chapter_number), float(chapter_number), manga_id, nome_manga)
+    else:
+        return jsonify({'error': 'Fonte inválida'}), 400
+
     return jsonify(success=True)
+
 
 @routes.route('/edit/<int:id>', methods=['GET', 'POST'])
 def edit(id):
@@ -261,27 +625,52 @@ def edit(id):
     if request.method == 'POST':
         manga.nome = request.form['nome']
         manga.descricao = request.form['descricao']
-        manga.categoria = request.form['categoria']
+        
+        # Remover duplicatas das categorias antes de salvar
+        categorias = request.form['categoria'].split(',')
+        manga.categoria = ', '.join(list(set([c.strip() for c in categorias])))
+
+        manga.url_base = request.form['url_base']
+        manga.ano_lancamento = request.form['ano_lancamento']
+        manga.nota = request.form['nota']
+        capa = request.files['capa']
+        
+        # Salvar a nova imagem da capa, se houver
+        if capa and capa.filename != '':
+            capa_filename = f"{manga.nome.replace(' ', '_')}_cover.jpg"
+            capa_path = os.path.join('static', 'covers', capa_filename)
+            os.makedirs(os.path.dirname(capa_path), exist_ok=True)
+            capa.save(capa_path)
+            manga.capa = capa_filename
         
         db.session.commit()
-        return redirect(url_for('routes.index'))
+        return redirect(url_for('routes.listar_mangas'))
     
-    return render_template('edit.html', manga=manga)
+    # Remover duplicatas das categorias antes de renderizar o template
+    categorias_unicas = list(set(manga.categoria.split(', ')))
+    print(f"Categorias carregadas do banco de dados (únicas): {categorias_unicas}")  # Adicionar o print
+    categorias_unicas_str = ', '.join(categorias_unicas)
+    return render_template('edit.html', manga=manga, categorias=categorias_unicas_str)
+
+
+
+
 
 @routes.route('/listar_mangas')
 def listar_mangas():
     query = request.args.get('query')
     page = request.args.get(get_page_parameter(), type=int, default=1)
     if query:
-        mangas_query = Manga.query.filter(Manga.nome.like(f'%{query}%'))
+        mangas_query = Manga.query.filter(Manga.nome.like(f'%{query}%')).order_by(Manga.data_adicao.desc())
     else:
-        mangas_query = Manga.query
+        mangas_query = Manga.query.order_by(Manga.data_adicao.desc())
 
     total = mangas_query.count()
-    mangas = mangas_query.paginate(page=page, per_page=10).items
-    pagination = Pagination(page=page, total=total, search=query, record_name='mangas', per_page=10, css_framework='bootstrap4')
+    mangas = mangas_query.paginate(page=page, per_page=9).items
+    pagination = Pagination(page=page, total=total, search=query, record_name='mangas', per_page=9, css_framework='bootstrap4')
     
     return render_template('listar_mangas.html', mangas=mangas, query=query, pagination=pagination)
+
 
 @routes.route('/delete_manga/<int:id>', methods=['POST'])
 def delete_manga(id):
@@ -310,21 +699,48 @@ def capitulos():
         capitulos_query = Capitulo.query.order_by(Capitulo.data_cadastro.desc())
 
     total = capitulos_query.count()
-    capitulos = capitulos_query.paginate(page=page, per_page=10).items
-    pagination = Pagination(page=page, total=total, search=query, record_name='capitulos', per_page=10, css_framework='bootstrap4')
+    capitulos = capitulos_query.paginate(page=page, per_page=9).items
+    pagination = Pagination(page=page, total=total, search=query, record_name='capitulos', per_page=9, css_framework='bootstrap4')
     
     return render_template('capitulos.html', capitulos=capitulos, query=query, pagination=pagination)
+import logging
+
+# Configurar o logger
+logging.basicConfig(level=logging.INFO)
 
 @routes.route('/add_chapter/<int:id>', methods=['GET', 'POST'])
 def add_chapter(id):
     manga = Manga.query.get_or_404(id)
     if request.method == 'POST':
         numero_capitulo = request.form['numero_capitulo']
-        url_base = manga.url_base
-        processar_capitulos(url_base, int(numero_capitulo), int(numero_capitulo), manga.id, manga.nome)
-        return redirect(url_for('routes.listar_mangas'))
-    
+        url_base = request.form['url_base']
+        pdf_capitulo = request.files.get('pdf_capitulo')
+
+        try:
+            if pdf_capitulo and pdf_capitulo.filename != '':
+                # Salvar o PDF manualmente
+                pdf_filename = f"{manga.nome.replace(' ', '_')}_capitulo_{numero_capitulo}.pdf"
+                pdf_path = os.path.join('static', 'pdfs', pdf_filename)
+                os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
+                pdf_capitulo.save(pdf_path)
+                logging.info(f"PDF carregado manualmente: {pdf_filename}")
+                logging.info(f"URL do PDF: /static/pdfs/{pdf_filename}")
+
+                # Adicionar o capítulo ao banco de dados
+                novo_capitulo = Capitulo(manga_id=manga.id, numero=numero_capitulo, arquivo_pdf=f"pdfs/{pdf_filename}")
+                db.session.add(novo_capitulo)
+                db.session.commit()
+            else:
+                # Lógica para processar o capítulo usando a URL Base
+                processar_capitulos(url_base, float(numero_capitulo), float(numero_capitulo), manga.id, manga.nome)
+
+            return jsonify({'success': True, 'message': 'Capítulo adicionado com sucesso.'})
+        except Exception as e:
+            logging.error(f"Erro ao processar o capítulo {numero_capitulo}: {e}")
+            return jsonify({'success': False, 'message': 'Erro ao adicionar capítulo.'})
+
     return render_template('add_chapter.html', manga=manga)
+
 
 
 
