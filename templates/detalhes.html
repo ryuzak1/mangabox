@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes do Mangá</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_cliente.css') }}">
+</head>
+<body>
+    <!-- Header Background -->
+    <div class="header-background">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container-fluid">
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav mr-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/inicial"><i class="fas fa-home"></i> Início</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/lista_mangas"><i class="fas fa-list"></i> Lista de Mangás</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#"><i class="fas fa-newspaper"></i> Últimos Mangás</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#"><i class="fas fa-tags"></i> Categorias</a>
+                        </li>
+                    </ul>
+                    <a class="navbar-brand ml-auto" href="#"><img src="https://cdn-icons-png.flaticon.com/512/3135/3135768.png" alt="User Photo"></a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Logo -->
+        <div class="logo">
+            <h1>AF ANIMESFLIX</h1>
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-box">
+            <input type="text" placeholder="Pesquisar...">
+        </div>
+
+        <!-- Alphabet Buttons -->
+        <div class="alphabet-buttons">
+            <button class="btn">A</button>
+            <button class="btn">B</button>
+            <button class="btn">C</button>
+            <button class="btn">D</button>
+            <!-- Continue for all letters -->
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <div class="row">
+            <!-- Manga Details -->
+            <div class="col-md-9">
+                <div class="manga-details">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <img id="manga-cover" src="" alt="Capa do Mangá" class="img-fluid">
+                        </div>
+                        <div class="col-md-8">
+                            <h2 id="manga-title">{{ manga.nome }}</h2>
+                            <p id="manga-description">{{ manga.descricao }}</p>
+                            <p><strong>Ano de Lançamento:</strong> <span id="manga-year">{{ manga.ano_lancamento }}</span></p>
+                            <p><strong>Nota:</strong> <span id="manga-rating">{{ manga.nota }}</span></p>
+                            <p><strong>Categorias:</strong> <span id="manga-categories">{{ manga.categoria }}</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manga Chapters -->
+                <div class="manga-chapters mt-5">
+                    <h3>Capítulos <i id="toggle-order-icon" class="fas fa-sort" style="cursor: pointer;"></i></h3>
+                    <div class="chapter-list-scroll">
+                        <ul id="manga-chapters-list" class="list-group">
+                            {% for capitulo in manga.capitulos %}
+                            <li class="list-group-item">Capítulo {{ capitulo.numero }} - {{ capitulo.data_cadastro.strftime('%d/%m/%Y') }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-3 sidebar">
+                <div class="section-title">
+                    <h4>Categorias</h4>
+                </div>
+                <ul class="list-group">
+                    <li class="list-group-item">Ação</li>
+                    <li class="list-group-item">Aventura</li>
+                    <li class="list-group-item">Comédia</li>
+                    <li class="list-group-item">Drama</li>
+                    <li class="list-group-item">Fantasia</li>
+                    <li class="list-group-item">Mistério</li>
+                    <li class="list-group-item">Romance</li>
+                    <li class="list-group-item">Terror</li>
+                </ul>
+
+                <!-- Últimos Mangás Adicionados -->
+                <div class="latest-mangas-section mt-4 p-2">
+                    <div class="section-title">
+                        <h4>Últimos 5 Mangás Adicionados</h4>
+                    </div>
+                    <ul class="list-group" id="latestMangasList">
+                        <!-- Conteúdo dos últimos mangás será inserido aqui -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer bg-dark text-light mt-5 p-4 text-center">
+        <h4>Importante</h4>
+        <p>Este site tem como finalidade promover o acesso a mangás de forma prática e conveniente. Respeitamos todos os direitos autorais e pedimos que apenas acesse o conteúdo se você possuir os direitos necessários.</p>
+        <a href="#" class="text-light">DMCA</a> | <a href="#" class="text-light">Política de Privacidade</a>
+        <p>&copy; 2024 Leitor de Mangá Inc. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script_client.js') }}"></script>
+</body>
+</html>

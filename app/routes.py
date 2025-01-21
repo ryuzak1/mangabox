@@ -105,26 +105,30 @@ import io
 import os
 
 
-def dividir_imagem(imagem, altura_pagina):
+def dividir_e_ajustar_imagem(imagem, largura_pagina, altura_pagina, limite_altura=2000):
     largura, altura = imagem.size
-    if altura <= altura_pagina:
-        return [imagem]
-    
-    partes = []
-    topo = 0
-    while topo < altura:
-        parte_inferior = min(topo + altura_pagina, altura)
-        parte = imagem.crop((0, topo, largura, parte_inferior))
-        partes.append(parte)
-        topo += altura_pagina
-    return partes
+
+    if altura > limite_altura:
+        # Ajustar a largura da imagem para caber na página
+        proporcao = largura_pagina / largura
+        nova_altura = int(altura * proporcao)
+        imagem_redimensionada = imagem.resize((largura_pagina, nova_altura), Image.LANCZOS)
+        
+        # Dividir a imagem redimensionada em partes que cabem na página
+        partes = []
+        topo = 0
+        while topo < nova_altura:
+            parte_inferior = min(topo + altura_pagina, nova_altura)
+            parte = imagem_redimensionada.crop((0, topo, largura_pagina, parte_inferior))
+            partes.append(parte)
+            topo += altura_pagina
+        return partes
+    else:
+        # Redimensionar a imagem sem cortar
+        imagem_resized = imagem.resize((largura_pagina, altura_pagina), Image.LANCZOS)
+        return [imagem_resized]
 
 
-
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-import io
-import os
 
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -132,28 +136,38 @@ import io
 import os
 
 def criar_pdf_fonte_2(imagens, nome_arquivo, qualidade=90):
-    largura_pagina, altura_pagina = A4
+    largura_pagina, altura_pagina = int(A4[0]), int(A4[1])
     c = canvas.Canvas(nome_arquivo, pagesize=A4)
     temp_files = []
 
     for idx, imagem in enumerate(imagens):
-        partes = dividir_imagem(imagem, altura_pagina)
-        for parte in partes:
+        partes = dividir_e_ajustar_imagem(imagem, largura_pagina, altura_pagina)
+        for parte_idx, parte in enumerate(partes):
             buffer = io.BytesIO()
             parte.save(buffer, format="JPEG", quality=qualidade)
             buffer.seek(0)
-            temp_file = f"temp_img_{idx}.jpg"
+            temp_file = f"temp_img_{idx}_{parte_idx}.jpg"
             with open(temp_file, 'wb') as f:
                 f.write(buffer.getbuffer())
-            c.drawImage(temp_file, 0, 0, largura_pagina, altura_pagina, preserveAspectRatio=True)
-            c.showPage()
             temp_files.append(temp_file)
+
+            if os.path.exists(temp_file):
+                c.drawImage(temp_file, 0, 0, largura_pagina, altura_pagina, preserveAspectRatio=True)
+                c.showPage()
+            else:
+                logging.error(f"Erro: o arquivo temporário {temp_file} não foi encontrado.")
 
     c.save()
 
     # Remover arquivos temporários
     for temp_file in temp_files:
-        os.remove(temp_file)
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+        else:
+            logging.error(f"Erro: o arquivo temporário {temp_file} não foi encontrado para remoção.")
+
+
+
 
 
 
@@ -220,7 +234,7 @@ def processar_capitulos_fonte_2(url_base, capitulo_inicial, capitulo_final, mang
             
             imagens = baixar_imagens_fonte_2(url)
             logging.info(f'Criando PDF para o capítulo {capitulo_str} de {nome_manga}')
-            criar_pdf(imagens, nome_arquivo_pdf, qualidade)
+            criar_pdf_fonte_2(imagens, nome_arquivo_pdf, qualidade)
             novo_capitulo = Capitulo(numero=capitulo_atual, arquivo_pdf=f'pdfs/{nome_capitulo}.pdf', manga_id=manga_id)
             db.session.add(novo_capitulo)
             db.session.commit()
@@ -230,6 +244,7 @@ def processar_capitulos_fonte_2(url_base, capitulo_inicial, capitulo_final, mang
             logging.error(f"Erro ao processar o capítulo {capitulo_str} de {nome_manga}: {e}")
 
         capitulo_atual += 0.5
+
 
 
 
@@ -257,16 +272,25 @@ def home():
 
 
 
-
+from werkzeug.security import check_password_hash
 @routes.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
-        if username == 'admin' and password == 'ninda':
-            session['user'] = username
-            return redirect(url_for('routes.home'))
+
+        # Buscar usuário no banco de dados
+        user = User.query.filter_by(username=username).first()
+
+        # Verificar se o usuário existe e a senha está correta
+        if user and check_password_hash(user.password, password):
+            # Verificar se o usuário é administrador
+            if user.is_admin:
+                session['user'] = username
+                print('logado')
+                return redirect(url_for('routes.home'))
+            else:
+                flash('Acesso negado: você não é um administrador.')
         else:
             flash('Usuário ou senha incorretos!')
     
@@ -274,7 +298,9 @@ def login():
 
 
 
+
 @routes.route('/add', methods=['GET', 'POST'])
+@login_required
 def add():
     if request.method == 'POST':
         nome = request.form['nome']
@@ -305,6 +331,7 @@ def add():
 
 
 @routes.route('/add_full', methods=['GET', 'POST'], endpoint='add_full_manga')
+@login_required
 def add_full_manga():
     if request.method == 'POST':
         url_base = request.form.get('url_base')
@@ -599,6 +626,7 @@ def adicionar_manga_completo_fonte_2(url_base):
 
 
 @routes.route('/process_chapter', methods=['POST'])
+@login_required
 def processar_capitulo_route():
     chapter_url = request.form.get('chapter_url')
     chapter_number = request.form.get('chapter_number')
@@ -620,6 +648,7 @@ def processar_capitulo_route():
 
 
 @routes.route('/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit(id):
     manga = Manga.query.get_or_404(id)
     if request.method == 'POST':
@@ -657,6 +686,7 @@ def edit(id):
 
 
 @routes.route('/listar_mangas')
+@login_required
 def listar_mangas():
     query = request.args.get('query')
     page = request.args.get(get_page_parameter(), type=int, default=1)
@@ -673,6 +703,7 @@ def listar_mangas():
 
 
 @routes.route('/delete_manga/<int:id>', methods=['POST'])
+@login_required
 def delete_manga(id):
     manga = Manga.query.get_or_404(id)
     if manga:
@@ -690,6 +721,7 @@ def delete_manga(id):
 
 
 @routes.route('/capitulos')
+@login_required
 def capitulos():
     query = request.args.get('query')
     page = request.args.get(get_page_parameter(), type=int, default=1)
@@ -709,11 +741,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 @routes.route('/add_chapter/<int:id>', methods=['GET', 'POST'])
+@login_required
 def add_chapter(id):
     manga = Manga.query.get_or_404(id)
     if request.method == 'POST':
         numero_capitulo = request.form['numero_capitulo']
         url_base = request.form['url_base']
+        fonte = request.form['fonte']  # Capturar o valor da fonte
         pdf_capitulo = request.files.get('pdf_capitulo')
 
         try:
@@ -731,8 +765,13 @@ def add_chapter(id):
                 db.session.add(novo_capitulo)
                 db.session.commit()
             else:
-                # Lógica para processar o capítulo usando a URL Base
-                processar_capitulos(url_base, float(numero_capitulo), float(numero_capitulo), manga.id, manga.nome)
+                # Lógica para processar o capítulo usando a URL Base e a Fonte
+                if fonte == '2':
+                    processar_capitulos_fonte_2(url_base, float(numero_capitulo), float(numero_capitulo), manga.id, manga.nome)
+                elif fonte == '1':
+                    processar_capitulos(url_base, float(numero_capitulo), float(numero_capitulo), manga.id, manga.nome)
+                else:
+                    return jsonify({'success': False, 'message': 'Fonte inválida.'})
 
             return jsonify({'success': True, 'message': 'Capítulo adicionado com sucesso.'})
         except Exception as e:
@@ -744,7 +783,9 @@ def add_chapter(id):
 
 
 
+
 @routes.route('/edit_capitulo/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit_capitulo(id):
     capitulo = Capitulo.query.get_or_404(id)
     if request.method == 'POST':
@@ -771,6 +812,7 @@ def edit_capitulo(id):
 
 
 @routes.route('/delete_capitulo/<int:id>', methods=['POST'])
+@login_required
 def delete_capitulo(id):
     capitulo = Capitulo.query.get_or_404(id)
     if capitulo:
@@ -785,6 +827,7 @@ def delete_capitulo(id):
 
 
 @routes.route('/register', methods=['GET', 'POST'])
+@login_required
 def register():
     if request.method == 'POST':
         username = request.form['username']
@@ -804,7 +847,7 @@ def register():
     return render_template('register.html')
 
 @routes.route('/users', methods=['GET', 'POST'])
-
+@login_required
 def list_users():
     search_query = request.form.get('search_query', '')
     if search_query:
@@ -815,7 +858,7 @@ def list_users():
 
 
 @routes.route('/delete_user/<int:user_id>', methods=['POST'])
-
+@login_required
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     db.session.delete(user)
@@ -823,3 +866,143 @@ def delete_user(user_id):
     flash('Usuário excluído com sucesso!', 'success')
     return redirect(url_for('routes.list_users'))
 
+
+
+@routes.route('/inicial')
+def inicial():
+    return render_template('inicial.html')
+
+@routes.route('/api/mangas_recentes', methods=['GET'])
+def mangas_recentes():
+    mangas = Manga.query.order_by(Manga.data_adicao.desc()).limit(10).all()
+    mangas_data = [{'id':manga.id,'nome': manga.nome, 'capa': manga.capa, 'data_adicao': manga.data_adicao} for manga in mangas]
+    return jsonify({'mangas': mangas_data})
+
+@routes.route('/api/capitulos_recentes', methods=['GET'])
+def capitulos_recentes():
+    capitulos = Capitulo.query.order_by(Capitulo.data_cadastro.desc()).limit(12).all()
+    capitulos_data = [{'id': capitulo.id, 'numero': capitulo.numero, 'manga_id': capitulo.manga_id, 'manga_nome': capitulo.manga.nome, 'manga_capa': capitulo.manga.capa, 'data_cadastro': capitulo.data_cadastro} for capitulo in capitulos]
+    return jsonify({'capitulos': capitulos_data})
+
+
+
+
+
+@routes.route('/detalhes/<int:manga_id>')
+def detalhes(manga_id):
+    manga = Manga.query.get_or_404(manga_id)
+    # Ordenar capítulos numericamente do maior para o menor
+    manga.capitulos = sorted(manga.capitulos, key=lambda capitulo: float(capitulo.numero), reverse=True)
+    return render_template('detalhes.html', manga=manga)
+
+
+
+@routes.route('/api/detalhes/<int:manga_id>')
+def api_detalhes(manga_id):
+    manga = Manga.query.get_or_404(manga_id)
+    # Ordenar capítulos numericamente do maior para o menor
+    manga.capitulos = sorted(manga.capitulos, key=lambda capitulo: float(capitulo.numero), reverse=True)
+    manga_dict = {
+        'capa': manga.capa,
+        'nome': manga.nome,
+        'descricao': manga.descricao,
+        'ano_lancamento': manga.ano_lancamento,
+        'nota': manga.nota,
+        'categoria': manga.categoria,
+        'capitulos': [{'numero': capitulo.numero, 'data_cadastro': capitulo.data_cadastro.isoformat()} for capitulo in manga.capitulos]
+    }
+    return jsonify(manga_dict)
+
+
+@routes.route('/api/ultimos_mangas', methods=['GET'])
+def ultimos_mangas():
+    mangas = Manga.query.order_by(Manga.data_adicao.desc()).limit(5).all()
+    mangas_data = [{'id': manga.id, 'nome': manga.nome, 'capa': manga.capa, 'data_adicao': manga.data_adicao, 'nota': manga.nota} for manga in mangas]
+    return jsonify({'mangas': mangas_data})
+
+
+@routes.route('/lista_mangas', methods=['GET'])
+def render_lista_mangas():
+    return render_template('lista_mangas.html')
+
+
+@routes.route('/api/lista_mangas', methods=['GET'])
+def lista_mangas():
+    page = request.args.get('page', 1, type=int)
+    mangas = Manga.query.order_by(Manga.data_adicao.desc()).paginate(page=page, per_page=12)
+    mangas_data = [{'id': manga.id, 'nome': manga.nome, 'capa': manga.capa, 'data_adicao': manga.data_adicao} for manga in mangas.items]
+    return jsonify({'mangas': mangas_data, 'total_pages': mangas.pages, 'current_page': mangas.page})
+
+
+
+@routes.route('/capitulo/<int:manga_id>/<float:capitulo_numero>', methods=['GET'])
+def detalhes_capitulo(manga_id, capitulo_numero):
+    logging.info(f'Buscando detalhes do capítulo número {capitulo_numero} do mangá com ID: {manga_id}')
+    capitulo = Capitulo.query.filter(Capitulo.manga_id == manga_id, Capitulo.numero == capitulo_numero).first()
+    if not capitulo:
+        logging.error(f'Capítulo número {capitulo_numero} do mangá com ID {manga_id} não encontrado.')
+        return "Capítulo não encontrado", 404
+
+    manga = Manga.query.get(manga_id)
+    if not manga:
+        logging.error(f'Mangá com ID {manga_id} não encontrado.')
+        return "Mangá não encontrado", 404
+
+    # Obtendo o capítulo anterior e próximo
+    capitulo_anterior = Capitulo.query.filter(Capitulo.manga_id == manga_id, Capitulo.numero == capitulo_numero - 1).first()
+    capitulo_proximo = Capitulo.query.filter(Capitulo.manga_id == manga_id, Capitulo.numero == capitulo_numero + 1).first()
+
+    # Adicionando logs para os capítulos anterior e próximo
+    if capitulo_anterior:
+        logging.info(f'Capítulo anterior encontrado com número: {capitulo_anterior.numero}')
+    else:
+        logging.info('Capítulo anterior não encontrado.')
+
+    if capitulo_proximo:
+        logging.info(f'Próximo capítulo encontrado com número: {capitulo_proximo.numero}')
+    else:
+        logging.info('Próximo capítulo não encontrado.')
+
+    # Definindo os números dos capítulos anterior e próximo
+    capitulo.anterior_numero = capitulo_anterior.numero if capitulo_anterior else None
+    capitulo.proximo_numero = capitulo_proximo.numero if capitulo_proximo else None
+
+    logging.info(f'Detalhes do capítulo número {capitulo_numero} encontrados. Renderizando página com anteriores: {capitulo.anterior_numero} e próximos: {capitulo.proximo_numero}.')
+    return render_template('detalhes_capitulo.html', capitulo=capitulo, manga=manga)
+
+
+@routes.route('/lista_capitulos', methods=['GET'])
+def lista_capitulos():
+    return render_template('lista_capitulos.html')
+
+import math
+import logging
+
+@routes.route('/api/ultimos_capitulos', methods=['GET'])
+def ultimos_capitulos():
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 12, type=int)
+    offset = (page - 1) * limit
+
+    capitulos_query = Capitulo.query.order_by(Capitulo.data_cadastro.desc())
+    total_capitulos = capitulos_query.count()
+    capitulos = capitulos_query.offset(offset).limit(limit).all()
+
+    capitulos_data = [{'id': capitulo.id, 'numero': capitulo.numero, 'manga_id': capitulo.manga_id, 'manga_nome': capitulo.manga.nome, 'manga_capa': capitulo.manga.capa, 'data_cadastro': capitulo.data_cadastro} for capitulo in capitulos]
+
+    total_pages = math.ceil(total_capitulos / limit)
+
+    return jsonify({
+        'capitulos': capitulos_data,
+        'total_pages': total_pages,
+        'current_page': page
+    })
+
+@routes.route('/api/sugestoes_pesquisa', methods=['GET'])
+def sugestoes_pesquisa():
+    termo = request.args.get('termo', '', type=str)
+    if termo:
+        mangas = Manga.query.filter(Manga.nome.ilike(f'%{termo}%')).limit(10).all()
+        mangas_data = [{'id': manga.id, 'nome': manga.nome, 'capa': manga.capa} for manga in mangas]
+        return jsonify({'mangas': mangas_data})
+    return jsonify({'mangas': []})

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recentes Adicionados</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .carousel-item img {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>10 Mangás Mais Recentes Adicionados</h2>
+        <div id="mangaCarousel" class="carousel slide" data-ride="carousel">
+            <div class="carousel-inner" id="mangaCarouselInner">
+                <!-- Conteúdo do carrossel será inserido aqui -->
+            </div>
+            <a class="carousel-control-prev" href="#mangaCarousel" role="button" data-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="sr-only">Anterior</span>
+            </a>
+            <a class="carousel-control-next" href="#mangaCarousel" role="button" data-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="sr-only">Próximo</span>
+            </a>
+        </div>
+
+        <h2 class="mt-5">10 Capítulos Mais Recentes Adicionados</h2>
+        <div id="chapterCarousel" class="carousel slide" data-ride="carousel">
+            <div class="carousel-inner" id="chapterCarouselInner">
+                <!-- Conteúdo do carrossel será inserido aqui -->
+            </div>
+            <a class="carousel-control-prev" href="#chapterCarousel" role="button" data-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="sr-only">Anterior</span>
+            </a>
+            <a class="carousel-control-next" href="#chapterCarousel" role="button" data-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="sr-only">Próximo</span>
+            </a>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Carregar dados do backend e preencher os carrosséis
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/api/mangas_recentes')
+                .then(response => response.json())
+                .then(data => {
+                    const mangaCarouselInner = document.getElementById('mangaCarouselInner');
+                    data.mangas.forEach((manga, index) => {
+                        const activeClass = index === 0 ? 'active' : '';
+                        mangaCarouselInner.innerHTML += `
+                            <div class="carousel-item ${activeClass}">
+                                <img src="${manga.imagem}" alt="${manga.nome}">
+                                <div class="carousel-caption d-none d-md-block">
+                                    <h5>${manga.nome}</h5>
+                                </div>
+                            </div>
+                        `;
+                    });
+                });
+
+            fetch('/api/capitulos_recentes')
+                .then(response => response.json())
+                .then(data => {
+                    const chapterCarouselInner = document.getElementById('chapterCarouselInner');
+                    data.capitulos.forEach((capitulo, index) => {
+                        const activeClass = index === 0 ? 'active' : '';
+                        chapterCarouselInner.innerHTML += `
+                            <div class="carousel-item ${activeClass}">
+                                <img src="${capitulo.imagem}" alt="${capitulo.nome}">
+                                <div class="carousel-caption d-none d-md-block">
+                                    <h5>${capitulo.nome}</h5>
+                                    <p>${capitulo.manga}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                });
+        });
+    </script>
+</body>
+</html>

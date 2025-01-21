@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Início</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_cliente.css') }}">
+    <style>
+        .search-box {
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+        .search-suggestions {
+            background-color: #fff; /* Pinta o fundo de branco */
+            border-radius: 10px; /* Bordas arredondadas */
+            border-top: none;
+            max-height: none;
+            overflow-y: hidden;
+            position: absolute;
+            width: 50%; /* Reduz a largura da sugestão para centralizar melhor */
+            z-index: 1000;
+            top: 100%; /* Move a sugestão para baixo do campo de entrada */
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .search-suggestions a {
+            color: yellow;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            text-decoration: none;
+        }
+        .search-suggestions a:hover {
+            background-color: #1b0f307e;
+        }
+        .search-suggestions img {
+            margin-left: 10px; /* Ajusta a margem para trazer a imagem mais próxima do nome */
+            width: 50px;
+            height: 75px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Background -->
+    <div class="header-background">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container-fluid">
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav mr-auto">
+                        <li class="nav-item active">
+                            <a class="nav-link" href="/inicial"><i class="fas fa-home"></i> Início</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/lista_mangas"><i class="fas fa-list"></i> Lista de Mangás</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/lista_capitulos"><i class="fas fa-newspaper"></i> Lista de Capítulos</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#"><i class="fas fa-tags"></i> Categorias</a>
+                        </li>
+                    </ul>
+                    <a class="navbar-brand ml-auto" href="#"><img src="https://cdn-icons-png.flaticon.com/512/3135/3135768.png" alt="User Photo"></a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Logo -->
+        <div class="logo">
+            <h1>AF ANIMESFLIX</h1>
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Pesquisar...">
+            <div id="suggestions" class="search-suggestions"></div>
+        </div>
+
+        <!-- Alphabet Buttons -->
+        <div class="alphabet-buttons">
+            <button class="btn">A</button>
+            <button class="btn">B</button>
+            <button class="btn">C</button>
+            <button class="btn">D</button>
+            <button class="btn">E</button>
+            <button class="btn">F</button>
+            <button class="btn">G</button>
+            <button class="btn">H</button>
+            <button class="btn">I</button>
+            <button class="btn">J</button>
+            <button class="btn">K</button>
+            <button class="btn">L</button>
+            <button class="btn">M</button>
+            <button class="btn">N</button>
+            <button class="btn">O</button>
+            <button class="btn">P</button>
+            <button class="btn">Q</button>
+            <button class="btn">R</button>
+            <button class="btn">S</button>
+            <button class="btn">T</button>
+            <button class="btn">U</button>
+            <button class="btn">V</button>
+            <button class="btn">W</button>
+            <button class="btn">X</button>
+            <button class="btn">Y</button>
+            <button class="btn">Z</button>
+            <button class="btn">#-1</button>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-md-9">
+                <div class="section-title">
+                    <h2>9 Mangás Mais Recentes</h2>
+                    <a href="/lista_mangas" class="view-more-link">Ver Mais</a>
+                </div>
+                <div class="row" id="mangaRow">
+                    <!-- Conteúdo dos mangás será inserido aqui -->
+                </div>
+
+                <div class="section-title mt-5">
+                    <h2>12 Capítulos Mais Recentes</h2>
+                    <a href="/lista_capitulos" class="view-more-link">Ver Mais</a>
+                </div>
+                <div class="row" id="chapterRow">
+                    <!-- Conteúdo dos capítulos será inserido aqui -->
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-3 sidebar">
+                <div class="section-title">
+                    <h4>Categorias</h4>
+                </div>
+                <ul class="list-group">
+                    <li class="list-group-item">Ação</li>
+                    <li class="list-group-item">Aventura</li>
+                    <li class="list-group-item">Comédia</li>
+                    <li class="list-group-item">Drama</li>
+                    <li class="list-group-item">Fantasia</li>
+                    <li class="list-group-item">Mistério</li>
+                    <li class="list-group-item">Romance</li>
+                    <li class="list-group-item">Terror</li>
+                </ul>
+
+                <!-- Últimos Mangás Adicionados -->
+                <div class="latest-mangas-section mt-4 p-2">
+                    <div class="section-title">
+                        <h4>Últimos 5 Mangás Adicionados</h4>
+                    </div>
+                    <ul class="list-group" id="latestMangasList">
+                        <!-- Conteúdo dos últimos mangás será inserido aqui -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer bg-dark text-light mt-5 p-4 text-center">
+        <h4>Importante</h4>
+        <p>Este site tem como finalidade promover o acesso a mangás de forma prática e conveniente. Respeitamos todos os direitos autorais e pedimos que apenas acesse o conteúdo se você possuir os direitos necessários.</p>
+        <a href="#" class="text-light">DMCA</a> | <a href="#" class="text-light">Política de Privacidade</a>
+        <p>&copy; 2024 Leitor de Mangá Inc. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrap.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script_client.js') }}"></script>
+</body>
+</html>

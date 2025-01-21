@@ -1,0 +1,222 @@
+body {
+    background-color: #110920;
+    color: white;
+}
+.navbar {
+    background-color: transparent;
+}
+.navbar-nav .nav-link {
+    color: white !important;
+    transition: color 0.3s;
+}
+.navbar-nav .nav-link:hover {
+    color: #007bff !important;
+}
+.navbar-brand img {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+}
+.header-background {
+    background-image: url('https://animesflix.net/_theme/img/image-header.jpg');
+    background-size: cover;
+    background-position: center;
+    height: 300px;
+    position: relative;
+    z-index: 1;
+}
+.header-background::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(17, 9, 32, 0.7), rgba(17, 9, 32, 1));
+    z-index: -1;
+}
+.logo {
+    text-align: center;
+    margin-top: 10px;
+    z-index: 2;
+}
+.search-box {
+    text-align: center;
+    margin: 10px 0;
+    z-index: 2;
+}
+.search-box input {
+    width: 50%;
+    padding: 10px;
+    border-radius: 20px;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+.search-box input::placeholder {
+    color: white;
+}
+.alphabet-buttons {
+    text-align: center;
+    margin: 10px 0;
+    z-index: 2;
+}
+.alphabet-buttons .btn {
+    margin: 3px;
+    border-radius: 10px;
+    background-color: #1b0f30;
+    color: white;
+    transition: background-color 0.3s;
+}
+.alphabet-buttons .btn:hover {
+    background-color: #290b4d;
+}
+.card {
+    height: 100%;
+    background-color: #1b0f30;
+    border-radius: 15px;
+    transition: transform 0.3s;
+    color: white;
+}
+.card:hover {
+    transform: scale(1.05);
+}
+.card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+.card-body {
+    text-align: center;
+}
+.sidebar {
+    background-color: #1b0f30;
+    padding: 15px;
+    border-radius: 10px;
+    color: white;
+}
+.latest-mangas-section {
+    background-color: #1b0f30;
+    border-radius: 10px;
+    padding: 10px; /* Ajuste do padding para reduzir o espaçamento */
+}
+.list-group-item {
+    background-color: #1b0f30;
+    border: none;
+    color: white;
+    margin-bottom: 5px;
+    border-radius: 10px;
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+}
+.list-group-item img {
+    border-radius: 5px;
+}
+.list-group-item:hover {
+    background-color: #290b4d;
+}
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    background-color: #290b4d; /* Ajuste de cor para ficar de acordo com o restante do site */
+    border-radius: 10px;
+    padding: 5px 10px; /* Ajuste do padding para reduzir o espaçamento */
+}
+.section-title h2,
+.section-title h4 {
+    margin-bottom: 0;
+    line-height: 1.5; /* Ajuste da altura da linha para reduzir o espaçamento vertical */
+    color: #FFF; /* Mantendo a cor do texto branca */
+}
+.view-more-link {
+    background-color: #007bff;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background-color 0.3s, color 0.3s;
+    margin-bottom: 10px;
+}
+.view-more-link:hover {
+    background-color: #0056b3;
+    color: black;
+}
+.manga-details {
+    background-color: #1b0f30;
+    border-radius: 15px;
+    padding: 20px;
+    color: white;
+}
+.manga-details img {
+    border-radius: 15px;
+}
+.manga-chapters .list-group-item {
+    background-color: #1b0f30;
+    border: none;
+    color: white;
+    border-radius: 10px;
+    transition: background-color 0.3s;
+}
+.manga-chapters .list-group-item:hover {
+    background-color: #290b4d;
+}
+.chapter-list-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.footer {
+    background-color: #1b0f30;
+    color: white;
+    padding: 20px 0;
+    text-align: center;
+}
+.footer a {
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+.footer a:hover {
+    color: #0056b3;
+}
+a {
+    color: white;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: none;
+}
+.fa-star {
+    color: yellow;
+}
+
+.search-suggestions {
+    background-color: transparent; /* Background transparente */
+   
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    position: absolute;
+    width: 100%;
+    z-index: 1000;
+}
+.search-suggestions a {
+    color: black;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    text-decoration: none;
+}
+.search-suggestions a:hover {
+    background-color: #1b0f30;
+}
+.search-suggestions img {
+    margin-right: 10px;
+    width: 50px;
+    height: 75px;
+}
