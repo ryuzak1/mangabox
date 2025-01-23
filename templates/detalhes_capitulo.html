@@ -7,6 +7,35 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style_cliente.css') }}">
+    <style>
+        .alphabet-buttons button {
+            margin: 2px;
+            padding: 5px 10px;
+            font-size: 16px;
+            border-radius: 4px;
+        }
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            border: 1px solid #ddd;
+            margin-bottom: 5px;
+            background-color: #fff;
+        }
+        .suggestion-item img {
+            margin-right: 10px;
+        }
+        .btn-custom {
+            background-color: #110920;
+            color: yellow;
+        }
+        .btn-custom .fa {
+            color: yellow;
+        }
+        .btn-custom:hover {
+            background-color: #1a0f2e;
+        }
+    </style>
 </head>
 <body>
     <!-- Header Background -->
@@ -41,7 +70,8 @@
 
         <!-- Search Box -->
         <div class="search-box">
-            <input type="text" placeholder="Pesquisar...">
+            <input type="text" id="searchInput" placeholder="Pesquisar...">
+            <div id="suggestions" class="search-suggestions"></div>
         </div>
 
         <!-- Alphabet Buttons -->
@@ -50,7 +80,29 @@
             <button class="btn">B</button>
             <button class="btn">C</button>
             <button class="btn">D</button>
-            <!-- Continue for all letters -->
+            <button class="btn">E</button>
+            <button class="btn">F</button>
+            <button class="btn">G</button>
+            <button class="btn">H</button>
+            <button class="btn">I</button>
+            <button class="btn">J</button>
+            <button class="btn">K</button>
+            <button class="btn">L</button>
+            <button class="btn">M</button>
+            <button class="btn">N</button>
+            <button class="btn">O</button>
+            <button class="btn">P</button>
+            <button class="btn">Q</button>
+            <button class="btn">R</button>
+            <button class="btn">S</button>
+            <button class="btn">T</button>
+            <button class="btn">U</button>
+            <button class="btn">V</button>
+            <button class="btn">W</button>
+            <button class="btn">X</button>
+            <button class="btn">Y</button>
+            <button class="btn">Z</button>
+            <button class="btn">#-1</button>
         </div>
     </div>
 
@@ -67,8 +119,9 @@
                             </div>
                             <embed src="{{ url_for('static', filename='' + capitulo.arquivo_pdf) }}" type="application/pdf" width="100%" height="900px" />
                             <div class="d-flex justify-content-between mt-3">
-                                <a id="prevChapter" href="/capitulo/{{ manga.id }}/{{ capitulo.anterior_numero }}" class="btn btn-primary {{ 'disabled' if capitulo.anterior_numero is none else '' }}">Capítulo Anterior</a>
-                                <a id="nextChapter" href="/capitulo/{{ manga.id }}/{{ capitulo.proximo_numero }}" class="btn btn-primary {{ 'disabled' if capitulo.proximo_numero is none else '' }}">Próximo Capítulo</a>
+                                <a id="prevChapter" href="/capitulo/{{ manga.id }}/{{ capitulo.anterior_numero }}" class="btn btn-custom {{ 'disabled' if capitulo.anterior_numero is none else '' }}"><i class="fas fa-arrow-left"></i> Capítulo Anterior</a>
+                                <a id="allChapters" href="/detalhes/{{ manga.id }}" class="btn btn-custom"><i class="fas fa-list"></i> Todos</a>
+                                <a id="nextChapter" href="/capitulo/{{ manga.id }}/{{ capitulo.proximo_numero }}" class="btn btn-custom {{ 'disabled' if capitulo.proximo_numero is none else '' }}">Próximo Capítulo <i class="fas fa-arrow-right"></i></a>
                             </div>
                         </div>
                     </div>
@@ -114,28 +167,7 @@
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const prevChapterBtn = document.getElementById('prevChapter');
-            const nextChapterBtn = document.getElementById('nextChapter');
-
-            // Logs para verificar os valores dos links
-            console.log('Link do capítulo anterior:', prevChapterBtn.href);
-            console.log('Link do próximo capítulo:', nextChapterBtn.href);
-
-            // Desabilitar botão de capítulo anterior se número do capítulo anterior for null
-            if (prevChapterBtn.classList.contains('disabled')) {
-                prevChapterBtn.setAttribute('href', '#');
-                prevChapterBtn.setAttribute('aria-disabled', 'true');
-            }
-
-            // Desabilitar botão de próximo capítulo se número do capítulo próximo for null
-            if (nextChapterBtn.classList.contains('disabled')) {
-                nextChapterBtn.setAttribute('href', '#');
-                nextChapterBtn.setAttribute('aria-disabled', 'true');
-            }
-        });
-    </script>
+    <script src="https://stackpath.bootstrap.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script_capitulo_detalhe.js') }}"></script>
 </body>
 </html>

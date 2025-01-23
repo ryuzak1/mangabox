@@ -2,6 +2,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     let page = parseInt(urlParams.get('page')) || 1;
 
+    // Função para exibir sugestões de pesquisa
+    function showSuggestions(termo) {
+        if (termo.length === 0) {
+            document.getElementById('suggestions').innerHTML = '';
+            return;
+        }
+        fetch(`/api/sugestoes_pesquisa?termo=${termo}`)
+            .then(response => response.json())
+            .then(data => {
+                const suggestions = document.getElementById('suggestions');
+                suggestions.innerHTML = '';
+                data.mangas.slice(0, 3).forEach(manga => {
+                    const suggestionItem = document.createElement('a');
+                    suggestionItem.href = `/detalhes/${manga.id}`;
+                    suggestionItem.className = 'suggestion-item';
+                    suggestionItem.innerHTML = `
+                        <img src="/static/covers/${manga.capa}" alt="${manga.nome}" class="suggestion-img">
+                        <span class="suggestion-text">${manga.nome}</span>
+                    `;
+                    suggestions.appendChild(suggestionItem);
+                });
+            });
+    }
+
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', function() {
+        const termo = searchInput.value;
+        showSuggestions(termo);
+    });
+
+    // Função para carregar os capítulos
     function loadChapters(page) {
         fetch(`/api/ultimos_capitulos?page=${page}`)
             .then(response => response.json())
@@ -63,4 +94,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     loadChapters(page);
     loadLatestMangas();
+    // Evento de clique nas letras do alfabeto
+    const alphabetButtonsContainer = document.querySelector('.alphabet-buttons');
+    if (alphabetButtonsContainer) {
+        const alphabetButtons = alphabetButtonsContainer.querySelectorAll('button');
+        alphabetButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const letra = this.textContent === "#-1" ? "%23-1" : this.textContent; // Codificar "#-1"
+                window.location.href = `/lista_mangas?letra=${letra}&page=1`;
+            });
+        });
+    }
 });

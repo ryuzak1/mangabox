@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Script carregado e executado.');
+
     // Função para exibir sugestões de pesquisa
     function showSuggestions(termo) {
         if (termo.length === 0) {
@@ -28,33 +30,30 @@ document.addEventListener('DOMContentLoaded', function() {
         const termo = searchInput.value;
         showSuggestions(termo);
     });
-    // Função para calcular o tempo decorrido
-    function timeSince(date) {
-        const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-        let interval = seconds / 31536000;
 
-        if (interval > 1) {
-            return Math.floor(interval) + " anos atrás";
+    // Função para selecionar letras e navegar para a lista de mangás
+    function configurarSelecaoDeLetras() {
+        const alphabetButtonsContainer = document.querySelector('.alphabet-buttons');
+        if (alphabetButtonsContainer) {
+            console.log('Div alphabet-buttons encontrada.');
+            const alphabetButtons = alphabetButtonsContainer.querySelectorAll('button');
+            console.log(`Número de botões encontrados: ${alphabetButtons.length}`);
+            alphabetButtons.forEach(button => {
+                console.log(`Botão encontrado: ${button.textContent}`);
+                button.addEventListener('click', function() {
+                    const letra = this.textContent === "#-1" ? "%23-1" : this.textContent; // Codificar "#-1"
+                    console.log(`Letra clicada: ${letra}`);
+                    window.location.href = `/lista_mangas?letra=${letra}&page=1`;
+                });
+            });
+        } else {
+            console.log('Div alphabet-buttons não encontrada.');
         }
-        interval = seconds / 2592000;
-        if (interval > 1) {
-            return Math.floor(interval) + " meses atrás";
-        }
-        interval = seconds / 86400;
-        if (interval > 1) {
-            return Math.floor(interval) + " dias atrás";
-        }
-        interval = seconds / 3600;
-        if (interval > 1) {
-            return Math.floor(interval) + " horas atrás";
-        }
-        interval = seconds / 60;
-        if (interval > 1) {
-            return Math.floor(interval) + " minutos atrás";
-        }
-        return Math.floor(seconds) + " segundos atrás";
     }
 
+    // Configurar a seleção de letras na página inicial
+    configurarSelecaoDeLetras();
+    
     // Função para inverter a ordem dos capítulos
     function toggleChapterOrder() {
         const chapterList = document.getElementById('manga-chapters-list');
@@ -154,10 +153,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             console.log('Ordem inicial dos capítulos:', manga.capitulos.map(chapter => chapter.numero));
-        })
-        .catch(error => {
-            console.error('Erro ao buscar os detalhes do mangá:', error);
         });
 
-    document.getElementById('toggle-order-icon').addEventListener('click', toggleChapterOrder);
+    // Evento de clique nas letras do alfabeto
+    const alphabetButtonsContainer = document.querySelector('.alphabet-buttons');
+    if (alphabetButtonsContainer) {
+        const alphabetButtons = alphabetButtonsContainer.querySelectorAll('button');
+        alphabetButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const letra = this.textContent === "#-1" ? "%23-1" : this.textContent; // Codificar "#-1"
+                window.location.href = `/lista_mangas?letra=${letra}&page=1`;
+            });
+        });
+    }
 });

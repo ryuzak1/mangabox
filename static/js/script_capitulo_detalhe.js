@@ -1,14 +1,23 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Função para inverter a ordem dos capítulos
-    function toggleChapterOrder() {
-        const chapterList = document.getElementById('manga-chapters-list');
-        const chapters = Array.from(chapterList.children);
-        chapters.reverse().forEach(chapter => chapterList.appendChild(chapter));
+    const prevChapterBtn = document.getElementById('prevChapter');
+    const nextChapterBtn = document.getElementById('nextChapter');
+
+    // Logs para verificar os valores dos links
+    console.log('Link do capítulo anterior:', prevChapterBtn.href);
+    console.log('Link do próximo capítulo:', nextChapterBtn.href);
+
+    // Desabilitar botão de capítulo anterior se número do capítulo anterior for null
+    if (prevChapterBtn.classList.contains('disabled')) {
+        prevChapterBtn.setAttribute('href', '#');
+        prevChapterBtn.setAttribute('aria-disabled', 'true');
     }
 
-    // Adicionar evento de clique ao botão de inverter ordem
-    document.getElementById('toggle-order-icon').addEventListener('click', toggleChapterOrder);
-
+    // Desabilitar botão de próximo capítulo se número do capítulo próximo for null
+    if (nextChapterBtn.classList.contains('disabled')) {
+        nextChapterBtn.setAttribute('href', '#');
+        nextChapterBtn.setAttribute('aria-disabled', 'true');
+    }
+    
     // Função para exibir sugestões de pesquisa
     function showSuggestions(termo) {
         if (termo.length === 0) {
@@ -50,17 +59,4 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-
-    // Adicionar evento de clique em cada item da lista de capítulos
-    const chaptersList = document.getElementById('manga-chapters-list');
-    const chapters = Array.from(chaptersList.children);
-    chapters.forEach((chapter, index) => {
-        chapter.style.cursor = 'pointer'; // Adicionar efeito de mão no cursor
-        chapter.addEventListener('click', function() {
-            const chapterNumber = chapter.textContent.match(/Capítulo (\d+(\.\d+)?)/)[1];
-            const mangaId = window.location.pathname.split('/').pop();
-            console.log(`Capítulo clicado: ${chapterNumber}`);
-            window.location.href = `/capitulo/${mangaId}/${chapterNumber}`;
-        });
-    });
 });

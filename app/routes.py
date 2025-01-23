@@ -921,17 +921,33 @@ def ultimos_mangas():
     return jsonify({'mangas': mangas_data})
 
 
+from sqlalchemy import or_
+
+
+# Função para filtrar mangás por letra
+def filtrar_mangas_por_letra(letra):
+    if letra == "#-1":
+        return Manga.query.filter(or_(Manga.nome.ilike('[0-9]%'), Manga.nome.ilike('[!@#$%^&*()-_=+{};:,<.>/?~`]+%')))
+    return Manga.query.filter(Manga.nome.ilike(f'{letra}%'))
+
 @routes.route('/lista_mangas', methods=['GET'])
 def render_lista_mangas():
     return render_template('lista_mangas.html')
 
-
 @routes.route('/api/lista_mangas', methods=['GET'])
 def lista_mangas():
     page = request.args.get('page', 1, type=int)
-    mangas = Manga.query.order_by(Manga.data_adicao.desc()).paginate(page=page, per_page=12)
+    letra = request.args.get('letra', '', type=str)
+    
+    if letra:
+        mangas_query = filtrar_mangas_por_letra(letra)
+    else:
+        mangas_query = Manga.query.order_by(Manga.data_adicao.desc())
+
+    mangas = mangas_query.paginate(page=page, per_page=12)
     mangas_data = [{'id': manga.id, 'nome': manga.nome, 'capa': manga.capa, 'data_adicao': manga.data_adicao} for manga in mangas.items]
     return jsonify({'mangas': mangas_data, 'total_pages': mangas.pages, 'current_page': mangas.page})
+
 
 
 

@@ -7,6 +7,25 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style_cliente.css') }}">
+    <style>
+        .alphabet-buttons button {
+            margin: 2px;
+            padding: 5px 10px;
+            font-size: 16px;
+            border-radius: 4px;
+        }
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            border: 1px solid #ddd;
+            margin-bottom: 5px;
+            background-color: #fff;
+        }
+        .suggestion-item img {
+            margin-right: 10px;
+        }
+    </style>
 </head>
 <body>
     <!-- Header Background -->
@@ -41,7 +60,8 @@
 
         <!-- Search Box -->
         <div class="search-box">
-            <input type="text" placeholder="Pesquisar...">
+            <input type="text" id="searchInput" placeholder="Pesquisar...">
+            <div id="suggestions" class="search-suggestions"></div>
         </div>
 
         <!-- Alphabet Buttons -->
@@ -50,7 +70,29 @@
             <button class="btn">B</button>
             <button class="btn">C</button>
             <button class="btn">D</button>
-            <!-- Continue for all letters -->
+            <button class="btn">E</button>
+            <button class="btn">F</button>
+            <button class="btn">G</button>
+            <button class="btn">H</button>
+            <button class="btn">I</button>
+            <button class="btn">J</button>
+            <button class="btn">K</button>
+            <button class="btn">L</button>
+            <button class="btn">M</button>
+            <button class="btn">N</button>
+            <button class="btn">O</button>
+            <button class="btn">P</button>
+            <button class="btn">Q</button>
+            <button class="btn">R</button>
+            <button class="btn">S</button>
+            <button class="btn">T</button>
+            <button class="btn">U</button>
+            <button class="btn">V</button>
+            <button class="btn">W</button>
+            <button class="btn">X</button>
+            <button class="btn">Y</button>
+            <button class="btn">Z</button>
+            <button class="btn">#-1</button>
         </div>
     </div>
 
@@ -61,7 +103,7 @@
                 <div class="manga-details">
                     <div class="row">
                         <div class="col-md-4">
-                            <img id="manga-cover" src="" alt="Capa do Mangá" class="img-fluid">
+                            <img id="manga-cover" src="/static/covers/{{manga.capa}}" alt="Capa do Mangá" class="img-fluid">
                         </div>
                         <div class="col-md-8">
                             <h2 id="manga-title">{{ manga.nome }}</h2>
@@ -85,7 +127,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Sidebar -->
             <div class="col-md-3 sidebar">
                 <div class="section-title">
@@ -125,7 +166,7 @@
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="{{ url_for('static', filename='js/script_client.js') }}"></script>
+    <script src="https://stackpath.bootstrap.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script_detalhes.js') }}"></script>
 </body>
 </html>

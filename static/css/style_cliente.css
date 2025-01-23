@@ -195,28 +195,36 @@ a:hover {
     color: yellow;
 }
 
+.search-box {
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
 .search-suggestions {
-    background-color: transparent; /* Background transparente */
-   
+    background-color: #59319e85;; /* Pinta o fundo de branco */
+    border-radius: 10px; /* Bordas arredondadas */
     border-top: none;
-    max-height: 200px;
-    overflow-y: auto;
+    max-height: none;
+    overflow-y: hidden;
     position: absolute;
-    width: 100%;
+    width: 50%; /* Reduz a largura da sugestão para centralizar melhor */
     z-index: 1000;
+    top: 100%; /* Move a sugestão para baixo do campo de entrada */
+    left: 50%;
+    transform: translateX(-50%);
 }
 .search-suggestions a {
-    color: black;
+    color: yellow;
     display: flex;
     align-items: center;
     padding: 10px;
     text-decoration: none;
 }
 .search-suggestions a:hover {
-    background-color: #1b0f30;
+    background-color: #1b0f307e;
 }
 .search-suggestions img {
-    margin-right: 10px;
+    margin-left: 10px; /* Ajusta a margem para trazer a imagem mais próxima do nome */
     width: 50px;
     height: 75px;
 }

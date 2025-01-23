@@ -7,41 +7,6 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style_cliente.css') }}">
-    <style>
-        .search-box {
-            position: relative;
-            display: flex;
-            justify-content: center;
-        }
-        .search-suggestions {
-            background-color: #fff; /* Pinta o fundo de branco */
-            border-radius: 10px; /* Bordas arredondadas */
-            border-top: none;
-            max-height: none;
-            overflow-y: hidden;
-            position: absolute;
-            width: 50%; /* Reduz a largura da sugestão para centralizar melhor */
-            z-index: 1000;
-            top: 100%; /* Move a sugestão para baixo do campo de entrada */
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        .search-suggestions a {
-            color: yellow;
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            text-decoration: none;
-        }
-        .search-suggestions a:hover {
-            background-color: #1b0f307e;
-        }
-        .search-suggestions img {
-            margin-left: 10px; /* Ajusta a margem para trazer a imagem mais próxima do nome */
-            width: 50px;
-            height: 75px;
-        }
-    </style>
 </head>
 <body>
     <!-- Header Background -->

@@ -1,38 +1,72 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Função para exibir sugestões de pesquisa
+    function showSuggestions(termo) {
+        if (termo.length === 0) {
+            document.getElementById('suggestions').innerHTML = '';
+            return;
+        }
+        fetch(`/api/sugestoes_pesquisa?termo=${termo}`)
+            .then(response => response.json())
+            .then(data => {
+                const suggestions = document.getElementById('suggestions');
+                suggestions.innerHTML = '';
+                data.mangas.slice(0, 3).forEach(manga => {
+                    const suggestionItem = document.createElement('a');
+                    suggestionItem.href = `/detalhes/${manga.id}`;
+                    suggestionItem.className = 'suggestion-item';
+                    suggestionItem.innerHTML = `
+                        <img src="/static/covers/${manga.capa}" alt="${manga.nome}" class="suggestion-img">
+                        <span class="suggestion-text">${manga.nome}</span>
+                    `;
+                    suggestions.appendChild(suggestionItem);
+                });
+            });
+    }
+
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', function() {
+        const termo = searchInput.value;
+        showSuggestions(termo);
+    });
+
     // Função para carregar os mangás
     function carregarMangas(pagina, letra) {
-        fetch(`/api/lista_mangas?pagina=${pagina}&letra=${letra}`)
+        fetch(`/api/lista_mangas?page=${pagina}&letra=${letra}`)
             .then(response => response.json())
             .then(data => {
                 const mangaRow = document.getElementById('mangaRow');
-                mangaRow.innerHTML = '';
-                data.mangas.forEach(manga => {
-                    const col = document.createElement('div');
-                    col.className = 'col-md-4 mb-4';
-                    col.innerHTML = `
-                        <div class="card" onclick="window.location.href='/detalhes/${manga.id}'">
-                            <img src="/static/covers/${manga.capa}" class="card-img-top" alt="${manga.nome}">
-                            <div class="card-body">
-                                <h5 class="card-title">${manga.nome}</h5>
+                mangaRow.innerHTML = ''; // Limpar o conteúdo existente para evitar duplicação
+                if (data.mangas.length === 0) {
+                    mangaRow.innerHTML = '<p>Nenhum mangá encontrado para essa seleção</p>';
+                } else {
+                    data.mangas.forEach(manga => {
+                        const col = document.createElement('div');
+                        col.className = 'col-md-4 mb-4';
+                        col.innerHTML = `
+                            <div class="card" onclick="window.location.href='/detalhes/${manga.id}'">
+                                <img src="/static/covers/${manga.capa}" class="card-img-top" alt="${manga.nome}">
+                                <div class="card-body">
+                                    <h5 class="card-title">${manga.nome}</h5>
+                                </div>
                             </div>
-                        </div>
-                    `;
-                    mangaRow.appendChild(col);
-                });
-                carregarPaginacao(data.totalPaginas, pagina, letra);
+                        `;
+                        mangaRow.appendChild(col);
+                    });
+                }
+                carregarPaginacao(data.total_pages, data.current_page, letra);
             })
             .catch(error => console.error('Erro ao carregar os mangás:', error));
     }
 
     // Função para carregar a paginação
-    function carregarPaginacao(totalPaginas, paginaAtual, letra) {
+    function carregarPaginacao(totalPages, currentPage, letra) {
         const pagination = document.getElementById('pagination');
         pagination.innerHTML = '';
 
-        for (let i = 1; i <= totalPaginas; i++) {
+        for (let i = 1; i <= totalPages; i++) {
             const li = document.createElement('li');
-            li.className = `page-item ${i === paginaAtual ? 'active' : ''}`;
-            li.innerHTML = `<a class="page-link" href="#" data-pagina="${i}">${i}</a>`;
+            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
             pagination.appendChild(li);
         }
 
@@ -40,22 +74,19 @@ document.addEventListener('DOMContentLoaded', function() {
         pagination.querySelectorAll('a').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
-                const pagina = parseInt(this.dataset.pagina);
+                const pagina = parseInt(this.dataset.page);
                 carregarMangas(pagina, letra);
             });
         });
     }
 
-    // Evento de clique nas letras do alfabeto
-    document.querySelectorAll('.alphabet-buttons .btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const letra = this.textContent;
-            carregarMangas(1, letra);
-        });
-    });
+    // Obter a letra da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const letra = urlParams.get('letra') || '';
+    const page = parseInt(urlParams.get('page')) || 1;
 
     // Carregar os mangás na página inicial
-    carregarMangas(1, '');
+    carregarMangas(page, letra);
     // Função para inverter a ordem dos capítulos
     function toggleChapterOrder() {
         const chapterList = document.getElementById('manga-chapters-list');
@@ -69,25 +100,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return urlParts[urlParts.length - 1];
     }
 
-    // Carregar dados do backend e preencher os cards e capítulos
-    fetch('/api/mangas_recentes')
-        .then(response => response.json())
-        .then(data => {
-            const mangaRow = document.getElementById('mangaRow');
-            data.mangas.forEach(manga => {
-                const col = document.createElement('div');
-                col.className = 'col-md-4 mb-4';
-                col.innerHTML = `
-                    <div class="card" onclick="window.location.href='/detalhes/${manga.id}'">
-                        <img src="/static/covers/${manga.capa}" class="card-img-top" alt="${manga.nome}">
-                        <div class="card-body">
-                            <h5 class="card-title">${manga.nome}</h5>
-                        </div>
-                    </div>
-                `;
-                mangaRow.appendChild(col);
-            });
-        });
 
     fetch('/api/capitulos_recentes')
         .then(response => response.json())
@@ -155,10 +167,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             console.log('Ordem inicial dos capítulos:', manga.capitulos.map(chapter => chapter.numero));
-        })
-        .catch(error => {
-            console.error('Erro ao buscar os detalhes do mangá:', error);
         });
 
-    document.getElementById('toggle-order-icon').addEventListener('click', toggleChapterOrder);
+    // Evento de clique nas letras do alfabeto
+    const alphabetButtonsContainer = document.querySelector('.alphabet-buttons');
+    if (alphabetButtonsContainer) {
+        const alphabetButtons = alphabetButtonsContainer.querySelectorAll('button');
+        alphabetButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const letra = this.textContent === "#-1" ? "%23-1" : this.textContent; // Codificar "#-1"
+                window.location.href = `/lista_mangas?letra=${letra}&page=1`;
+            });
+        });
+    }
 });
