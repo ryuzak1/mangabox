@@ -12,6 +12,7 @@ from io import BytesIO
 import logging
 from functools import wraps
 import re
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -37,8 +38,8 @@ def baixar_imagens(url):
 def baixar_imagens_fonte_2(url):
 
 
-    logging.info(f"Buscando URL: {url}")
-    
+    logging.info(f"Buscando URL: {url}+?style=list")
+    url=url+"?style=list"
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -167,10 +168,6 @@ def criar_pdf_fonte_2(imagens, nome_arquivo, qualidade=90):
             logging.error(f"Erro: o arquivo temporário {temp_file} não foi encontrado para remoção.")
 
 
-
-
-
-
 def processar_capitulos(url_base, capitulo_inicial, capitulo_final, manga_id, nome_manga, qualidade=90, resolucao=(600, 760)):
     capitulo_atual = float(capitulo_inicial)
     capitulo_final = float(capitulo_final)
@@ -219,10 +216,12 @@ def processar_capitulos_fonte_2(url_base, capitulo_inicial, capitulo_final, mang
         try:
             if capitulo_atual.is_integer():
                 capitulo_str = str(int(capitulo_atual)).zfill(2)  # Formatar com dois dígitos
+                logging.info(f'CAPITULO INTEIRO PARA SER SALVO:{capitulo_str}')
             else:
                 parte_inteira = int(capitulo_atual)
                 parte_decimal = int((capitulo_atual - parte_inteira) * 10)
                 capitulo_str = f"{parte_inteira:02d}-{parte_decimal}"  # Formatar a parte inteira com dois dígitos
+                logging.info(f"CAPITULO DECIMAL PARA SER SALVO:{capitulo_str}")
 
             url = f"{url_base}{capitulo_str}/"
             logging.info(f'URL completa do capítulo: {url}')
@@ -235,7 +234,11 @@ def processar_capitulos_fonte_2(url_base, capitulo_inicial, capitulo_final, mang
             imagens = baixar_imagens_fonte_2(url)
             logging.info(f'Criando PDF para o capítulo {capitulo_str} de {nome_manga}')
             criar_pdf_fonte_2(imagens, nome_arquivo_pdf, qualidade)
-            novo_capitulo = Capitulo(numero=capitulo_atual, arquivo_pdf=f'pdfs/{nome_capitulo}.pdf', manga_id=manga_id)
+
+            logging.info(f"CAPITULO PARA SER SALVO:{capitulo_atual}")
+            numeroCapitulo = str(capitulo_atual)
+
+            novo_capitulo = Capitulo(numero=numeroCapitulo, arquivo_pdf=f'pdfs/{nome_capitulo}.pdf', manga_id=manga_id)
             db.session.add(novo_capitulo)
             db.session.commit()
             logging.info(f'Capítulo {capitulo_str} de {nome_manga} salvo com sucesso no banco de dados')
@@ -272,7 +275,7 @@ def home():
 
 
 
-from werkzeug.security import check_password_hash
+
 @routes.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -290,8 +293,10 @@ def login():
                 print('logado')
                 return redirect(url_for('routes.home'))
             else:
+                print('Acesso negado: você não é um administrador.')
                 flash('Acesso negado: você não é um administrador.')
         else:
+            print('ERRO AO LOGAR USUARIO OU SENHA INCORRETOS')
             flash('Usuário ou senha incorretos!')
     
     return render_template('login.html')
@@ -839,7 +844,8 @@ def register():
         if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
             flash('Usuário ou email já existe!', 'danger')
         else:
-            user = User(username=username, email=email, password=password, is_admin=is_admin)
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')  # Hash da senha
+            user = User(username=username, email=email, password=hashed_password, is_admin=is_admin)
             db.session.add(user)
             db.session.commit()
             flash('Usuário cadastrado com sucesso!', 'success')
@@ -1022,3 +1028,79 @@ def sugestoes_pesquisa():
         mangas_data = [{'id': manga.id, 'nome': manga.nome, 'capa': manga.capa} for manga in mangas]
         return jsonify({'mangas': mangas_data})
     return jsonify({'mangas': []})
+
+############## -------------- CLIENTE LOGIN -------------- ##############
+
+
+# Decorador para proteger rotas
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Você precisa estar logado para acessar esta página.')
+            return redirect(url_for('routes.inicial'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@routes.route('/loginCliente', methods=['POST'])
+def loginCliente():
+    username = request.form['username']
+    password = request.form['password']
+    print(username)
+    user = User.query.filter_by(username=username).first()
+    if username == "admin":
+        session['user_id'] = user.id
+        print('LOGADO')
+        flash('Login realizado com sucesso!', 'success')
+        return redirect(url_for('routes.perfil'))
+    else:
+        print('ERRO AO LOGAR')
+        flash('Nome de usuário ou senha incorretos.', 'danger')
+        return redirect(url_for('routes.inicial'))
+
+@routes.route('/signupCliente', methods=['POST'])
+def signupCliente():
+    username = request.form['username']
+    email = request.form['email']
+    password = request.form['password']
+
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        flash('Nome de usuário já existe.', 'danger')
+        return redirect(url_for('routes.inicial'))
+
+    existing_email = User.query.filter_by(email=email).first()
+    if existing_email:
+        flash('Email já está em uso.', 'danger')
+        return redirect(url_for('routes.inicial'))
+
+    hashed_password = generate_password_hash(password, method='sha256')
+    new_user = User(username=username, email=email, password=hashed_password)
+    db.session.add(new_user)
+    db.session.commit()
+
+    flash('Conta criada com sucesso! Faça o login.', 'success')
+    return redirect(url_for('routes.inicial'))
+
+@routes.route('/logoutCliente')
+def logoutCliente():
+    session.pop('user_id', None)
+    flash('Você saiu da conta.', 'success')
+    return redirect(url_for('routes.inicial'))
+
+@routes.route('/perfil')
+@login_required
+def perfil():
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    user_data = {
+        'username': user.username,
+        'email': user.email,
+        'favoritos': [
+            {'titulo': 'Mangá 1', 'capa': 'static/images/manga_cover_1.jpg'},
+            {'titulo': 'Mangá 2', 'capa': 'static/images/manga_cover_2.jpg'},
+            {'titulo': 'Mangá 3', 'capa': 'static/images/manga_cover_3.jpg'}
+        ]
+    }
+    return render_template('perfil.html', user_data=user_data)
+

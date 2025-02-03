@@ -7,6 +7,37 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style_cliente.css') }}">
+    <style>
+        /* Estilos personalizados para o modal */
+        .modal-content {
+            background-color: #290b4d;
+            color: yellow;
+        }
+        .modal-header, .modal-body {
+            border: none;
+        }
+        .nav-tabs .nav-link {
+            color: yellow;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #290b4d;
+            border-color: yellow;
+        }
+        .btn-primary {
+            background-color: yellow;
+            border-color: yellow;
+            color: #290b4d;
+        }
+        .btn-primary:hover {
+            background-color: #ffd700;
+            border-color: #ffd700;
+        }
+        .form-control {
+            background-color: #290b4d;
+            color: yellow;
+            border: 1px solid yellow;
+        }
+    </style>
 </head>
 <body>
     <!-- Header Background -->
@@ -29,7 +60,7 @@
                             <a class="nav-link" href="#"><i class="fas fa-tags"></i> Categorias</a>
                         </li>
                     </ul>
-                    <a class="navbar-brand ml-auto" href="#"><img src="https://cdn-icons-png.flaticon.com/512/3135/3135768.png" alt="User Photo"></a>
+                    <a class="navbar-brand ml-auto" href="#" data-toggle="modal" data-target="#authModal"><img src="https://cdn-icons-png.flaticon.com/512/3135/3135768.png" alt="User Photo"></a>
                 </div>
             </div>
         </nav>
@@ -126,6 +157,64 @@
             </div>
         </div>
     </div>
+    <!-- Modal de Autenticação -->
+    <div class="modal fade" id="authModal" tabindex="-1" role="dialog" aria-labelledby="authModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="authModalLabel">Autenticação</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Abas para Login e Cadastro -->
+                    <ul class="nav nav-tabs" id="authTab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="login-tab" data-toggle="tab" href="#login" role="tab" aria-controls="login" aria-selected="true">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="signup-tab" data-toggle="tab" href="#signup" role="tab" aria-controls="signup" aria-selected="false">Criar Conta</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="authTabContent">
+                        <!-- Login Form -->
+                        <div class="tab-pane fade show active" id="login" role="tabpanel" aria-labelledby="login-tab">
+                            <form method="POST" action="{{ url_for('routes.loginCliente') }}" id="loginForm">
+                                <div class="form-group">
+                                    <label for="loginUsername">Nome de Usuário</label>
+                                    <input type="text" class="form-control" id="loginUsername" name="username" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="loginPassword">Senha</label>
+                                    <input type="password" class="form-control" id="loginPassword" name="password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Login</button>
+                            </form>
+                        </div>
+                        <!-- Signup Form -->
+                        <div class="tab-pane fade" id="signup" role="tabpanel" aria-labelledby="signup-tab">
+                            <form method="POST" action="{{ url_for('routes.signupCliente') }}" id="signupForm">
+                                <div class="form-group">
+                                    <label for="signupUsername">Nome de Usuário</label>
+                                    <input type="text" class="form-control" id="signupUsername" name="username" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="signupEmail">Email</label>
+                                    <input type="email" class="form-control" id="signupEmail" name="email" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="signupPassword">Senha</label>
+                                    <input type="password" class="form-control" id="signupPassword" name="password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Criar Conta</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="footer bg-dark text-light mt-5 p-4 text-center">
@@ -135,9 +224,10 @@
         <p>&copy; 2024 Leitor de Mangá Inc. Todos os direitos reservados.</p>
     </footer>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <!-- Dependências de JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrap.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="{{ url_for('static', filename='js/script_client.js') }}"></script>
 </body>
 </html>

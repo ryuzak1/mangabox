@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style_cliente.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
     <style>
         .alphabet-buttons button {
             margin: 2px;
@@ -34,6 +36,64 @@
         }
         .btn-custom:hover {
             background-color: #1a0f2e;
+        }
+        #pdfViewer {
+            max-height: 90vh;
+            margin-bottom: 20px;
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        #pdfContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #pdfContainer canvas {
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        #loadingSpinner {
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .fullscreen-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            z-index: 9999;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .fullscreen-mode #pdfContainer {
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .exit-fullscreen {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10000;
+            background: #110920;
+            color: yellow;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .exit-fullscreen:hover {
+            background: #1a0f2e;
         }
     </style>
 </head>
@@ -115,9 +175,22 @@
                         <div class="col-md-12">
                             <h2>{{ manga.nome }} - Capítulo {{ capitulo.numero }}</h2>
                             <div class="d-flex justify-content-end mb-3">
-                                <a href="/static/{{ capitulo.arquivo_pdf }}" target="_blank" class="btn btn-primary"><i class="fas fa-expand"></i> Abrir em Tela Cheia</a>
+                                <button id="fullscreenBtn" class="btn btn-primary">
+                                    <i class="fas fa-expand"></i> Modo Tela Cheia
+                                </button>
                             </div>
-                            <embed src="{{ url_for('static', filename='' + capitulo.arquivo_pdf) }}" type="application/pdf" width="100%" height="900px" />
+                            <div id="pdfViewer" style="width: 100%; overflow-y: auto;">
+                                <button id="exitFullscreen" class="exit-fullscreen">
+                                    <i class="fas fa-compress"></i> Sair da Tela Cheia
+                                </button>
+                                <div id="loadingSpinner" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                                        <span class="sr-only">Carregando...</span>
+                                    </div>
+                                    <p class="mt-3" style="color: #1a0f2e;">Carregando PDF...</p>
+                                </div>
+                                <div id="pdfContainer" style="display: none;"></div>
+                            </div>
                             <div class="d-flex justify-content-between mt-3">
                                 <a id="prevChapter" href="/capitulo/{{ manga.id }}/{{ capitulo.anterior_numero }}" class="btn btn-custom {{ 'disabled' if capitulo.anterior_numero is none else '' }}"><i class="fas fa-arrow-left"></i> Capítulo Anterior</a>
                                 <a id="allChapters" href="/detalhes/{{ manga.id }}" class="btn btn-custom"><i class="fas fa-list"></i> Todos</a>
@@ -169,5 +242,153 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrap.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="{{ url_for('static', filename='js/script_capitulo_detalhe.js') }}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const url = "{{ url_for('static', filename='' + capitulo.arquivo_pdf) }}";
+        const container = document.getElementById('pdfContainer');
+        const spinner = document.getElementById('loadingSpinner');
+        const pdfViewer = document.getElementById('pdfViewer');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const exitFullscreenBtn = document.getElementById('exitFullscreen');
+        let viewerWidth = pdfViewer.offsetWidth;
+
+        // Função para verificar e gerenciar o cache
+        async function getCachedPDF(url) {
+            try {
+                // Primeiro verifica se existe no cache
+                const cache = await caches.open('pdf-cache-v1');
+                const cachedResponse = await cache.match(url);
+                
+                if (cachedResponse) {
+                    const cachedData = await cachedResponse.clone().arrayBuffer();
+                    const metadata = await cache.match(url + '-metadata');
+                    
+                    if (metadata) {
+                        const metadataJson = await metadata.json();
+                        const now = new Date().getTime();
+                        // Verifica se o cache tem menos de 30 minutos (1800000 ms)
+                        if (now - metadataJson.timestamp < 1800000) {
+                            console.log('Usando PDF do cache');
+                            return cachedData;
+                        }
+                    }
+                }
+
+                // Se não encontrou no cache ou cache expirado, faz o download
+                console.log('Baixando novo PDF');
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Falha ao baixar o PDF');
+                const arrayBuffer = await response.arrayBuffer();
+                
+                // Salva o novo PDF no cache
+                await cache.put(url, new Response(arrayBuffer.slice(0)));
+                await cache.put(url + '-metadata', new Response(JSON.stringify({
+                    timestamp: new Date().getTime()
+                })));
+                
+                return arrayBuffer;
+            } catch (error) {
+                console.error('Erro ao gerenciar cache:', error);
+                throw error;
+            }
+        }
+
+        // Função para carregar o PDF
+        async function loadPDF() {
+            container.innerHTML = '';
+            container.style.display = 'none';
+            spinner.style.display = 'flex';
+
+            try {
+                const pdfData = await getCachedPDF(url);
+                const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
+                const numPages = pdf.numPages;
+
+                for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    const originalViewport = page.getViewport({scale: 1});
+                    const scale = viewerWidth / originalViewport.width;
+                    const viewport = page.getViewport({scale: scale});
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    canvas.style.marginBottom = '20px';
+                    container.appendChild(canvas);
+
+                    await page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise;
+                }
+
+                spinner.style.display = 'none';
+                container.style.display = 'flex';
+            } catch (error) {
+                console.error('Erro ao renderizar PDF:', error);
+                spinner.innerHTML = `
+                    <p class="text-danger">Erro ao carregar o PDF. Por favor, tente novamente.</p>
+                    <button class="btn btn-primary mt-3" onclick="window.location.reload()">
+                        <i class="fas fa-sync-alt"></i> Recarregar Página
+                    </button>
+                `;
+            }
+        }
+
+        // Função para recarregar o PDF
+        function reloadPDF() {
+            spinner.innerHTML = `
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="sr-only">Carregando...</span>
+                </div>
+                <p class="mt-3">Carregando PDF...</p>
+            `;
+            spinner.style.display = 'flex';
+            container.style.display = 'none';
+            loadPDF();
+        }
+
+        // Função para entrar no modo tela cheia
+        function enterFullscreen() {
+            pdfViewer.classList.add('fullscreen-mode');
+            exitFullscreenBtn.style.display = 'block';
+            viewerWidth = pdfViewer.offsetWidth;
+            // Recarrega o PDF com a nova largura
+            loadPDF();
+        }
+
+        // Função para sair do modo tela cheia
+        function exitFullscreen() {
+            pdfViewer.classList.remove('fullscreen-mode');
+            exitFullscreenBtn.style.display = 'none';
+            viewerWidth = pdfViewer.offsetWidth;
+            // Recarrega o PDF com a largura original
+            loadPDF();
+        }
+
+        // Event listeners para os botões
+        fullscreenBtn.addEventListener('click', enterFullscreen);
+        exitFullscreenBtn.addEventListener('click', exitFullscreen);
+
+        // Adiciona botão de recarregar ao pressionar F5
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F5') {
+                e.preventDefault();
+                reloadPDF();
+            }
+        });
+
+        // Carrega o PDF inicialmente
+        loadPDF();
+
+        // Adiciona listener para a tecla ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && pdfViewer.classList.contains('fullscreen-mode')) {
+                exitFullscreen();
+            }
+        });
+    });
+    </script>
 </body>
 </html>
