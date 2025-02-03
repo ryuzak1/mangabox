@@ -250,12 +250,6 @@ def processar_capitulos_fonte_2(url_base, capitulo_inicial, capitulo_final, mang
 
 
 
-
-
-
-
-
-
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -266,14 +260,16 @@ def login_required(f):
 
 
 @routes.route('/')
-@login_required
 def home():
+    return redirect(url_for('routes.inicial'))
+
+@routes.route('/_admin')
+@login_required
+def home_admin():
     total_mangas = Manga.query.count()
     total_capitulos = Capitulo.query.count()
     mangas = Manga.query.order_by(Manga.id.desc()).limit(5).all()
     return render_template('index.html', total_mangas=total_mangas, total_capitulos=total_capitulos, mangas=mangas)
-
-
 
 
 @routes.route('/login', methods=['GET', 'POST'])
@@ -1028,79 +1024,3 @@ def sugestoes_pesquisa():
         mangas_data = [{'id': manga.id, 'nome': manga.nome, 'capa': manga.capa} for manga in mangas]
         return jsonify({'mangas': mangas_data})
     return jsonify({'mangas': []})
-
-############## -------------- CLIENTE LOGIN -------------- ##############
-
-
-# Decorador para proteger rotas
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('Você precisa estar logado para acessar esta página.')
-            return redirect(url_for('routes.inicial'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-@routes.route('/loginCliente', methods=['POST'])
-def loginCliente():
-    username = request.form['username']
-    password = request.form['password']
-    print(username)
-    user = User.query.filter_by(username=username).first()
-    if username == "admin":
-        session['user_id'] = user.id
-        print('LOGADO')
-        flash('Login realizado com sucesso!', 'success')
-        return redirect(url_for('routes.perfil'))
-    else:
-        print('ERRO AO LOGAR')
-        flash('Nome de usuário ou senha incorretos.', 'danger')
-        return redirect(url_for('routes.inicial'))
-
-@routes.route('/signupCliente', methods=['POST'])
-def signupCliente():
-    username = request.form['username']
-    email = request.form['email']
-    password = request.form['password']
-
-    existing_user = User.query.filter_by(username=username).first()
-    if existing_user:
-        flash('Nome de usuário já existe.', 'danger')
-        return redirect(url_for('routes.inicial'))
-
-    existing_email = User.query.filter_by(email=email).first()
-    if existing_email:
-        flash('Email já está em uso.', 'danger')
-        return redirect(url_for('routes.inicial'))
-
-    hashed_password = generate_password_hash(password, method='sha256')
-    new_user = User(username=username, email=email, password=hashed_password)
-    db.session.add(new_user)
-    db.session.commit()
-
-    flash('Conta criada com sucesso! Faça o login.', 'success')
-    return redirect(url_for('routes.inicial'))
-
-@routes.route('/logoutCliente')
-def logoutCliente():
-    session.pop('user_id', None)
-    flash('Você saiu da conta.', 'success')
-    return redirect(url_for('routes.inicial'))
-
-@routes.route('/perfil')
-@login_required
-def perfil():
-    user_id = session.get('user_id')
-    user = User.query.get(user_id)
-    user_data = {
-        'username': user.username,
-        'email': user.email,
-        'favoritos': [
-            {'titulo': 'Mangá 1', 'capa': 'static/images/manga_cover_1.jpg'},
-            {'titulo': 'Mangá 2', 'capa': 'static/images/manga_cover_2.jpg'},
-            {'titulo': 'Mangá 3', 'capa': 'static/images/manga_cover_3.jpg'}
-        ]
-    }
-    return render_template('perfil.html', user_data=user_data)
-

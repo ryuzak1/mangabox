@@ -148,7 +148,7 @@
                 <!-- Últimos Mangás Adicionados -->
                 <div class="latest-mangas-section mt-4 p-2">
                     <div class="section-title">
-                        <h4>Últimos 5 Mangás Adicionados</h4>
+                        <h4>Últimos Adicionados</h4>
                     </div>
                     <ul class="list-group" id="latestMangasList">
                         <!-- Conteúdo dos últimos mangás será inserido aqui -->
@@ -157,67 +157,10 @@
             </div>
         </div>
     </div>
-    <!-- Modal de Autenticação -->
-    <div class="modal fade" id="authModal" tabindex="-1" role="dialog" aria-labelledby="authModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="authModalLabel">Autenticação</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <!-- Abas para Login e Cadastro -->
-                    <ul class="nav nav-tabs" id="authTab" role="tablist">
-                        <li class="nav-item">
-                            <a class="nav-link active" id="login-tab" data-toggle="tab" href="#login" role="tab" aria-controls="login" aria-selected="true">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" id="signup-tab" data-toggle="tab" href="#signup" role="tab" aria-controls="signup" aria-selected="false">Criar Conta</a>
-                        </li>
-                    </ul>
-                    <div class="tab-content" id="authTabContent">
-                        <!-- Login Form -->
-                        <div class="tab-pane fade show active" id="login" role="tabpanel" aria-labelledby="login-tab">
-                            <form method="POST" action="{{ url_for('routes.loginCliente') }}" id="loginForm">
-                                <div class="form-group">
-                                    <label for="loginUsername">Nome de Usuário</label>
-                                    <input type="text" class="form-control" id="loginUsername" name="username" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="loginPassword">Senha</label>
-                                    <input type="password" class="form-control" id="loginPassword" name="password" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Login</button>
-                            </form>
-                        </div>
-                        <!-- Signup Form -->
-                        <div class="tab-pane fade" id="signup" role="tabpanel" aria-labelledby="signup-tab">
-                            <form method="POST" action="{{ url_for('routes.signupCliente') }}" id="signupForm">
-                                <div class="form-group">
-                                    <label for="signupUsername">Nome de Usuário</label>
-                                    <input type="text" class="form-control" id="signupUsername" name="username" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="signupEmail">Email</label>
-                                    <input type="email" class="form-control" id="signupEmail" name="email" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="signupPassword">Senha</label>
-                                    <input type="password" class="form-control" id="signupPassword" name="password" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Criar Conta</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    
 
     <!-- Footer -->
-    <footer class="footer bg-dark text-light mt-5 p-4 text-center">
+    <footer class="footer text-light mt-5 p-4 text-center">
         <h4>Importante</h4>
         <p>Este site tem como finalidade promover o acesso a mangás de forma prática e conveniente. Respeitamos todos os direitos autorais e pedimos que apenas acesse o conteúdo se você possuir os direitos necessários.</p>
         <a href="#" class="text-light">DMCA</a> | <a href="#" class="text-light">Política de Privacidade</a>
